@@ -16,4 +16,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Hello World!" />
+
+    <Button
+        android:id="@+id/button_main_goToTakePicture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/button_main_goToTakePicture"
+        android:onClick="takePicture"
+        android:layout_below="@id/sample_text"
+        android:layout_centerHorizontal="true"/>
 </RelativeLayout>

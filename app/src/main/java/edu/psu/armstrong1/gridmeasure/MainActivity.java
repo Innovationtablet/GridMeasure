@@ -1,7 +1,10 @@
 package edu.psu.armstrong1.gridmeasure;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
@@ -25,5 +28,11 @@ public class MainActivity extends AppCompatActivity {
     // Used to load the 'native-lib' library on application startup.
     static {
         System.loadLibrary("native-lib");
+    }
+
+    // Called when the user clicks the take picture button
+    public void takePicture(View view) {
+        Intent intent = new Intent(view.getContext(), TakePictureActivity.class);
+        view.getContext().startActivity(intent);
     }
 }
