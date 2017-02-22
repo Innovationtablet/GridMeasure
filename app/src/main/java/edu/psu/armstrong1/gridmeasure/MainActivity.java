@@ -14,9 +14,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-    // Example of a call to a native method
-    TextView tv = (TextView) findViewById(R.id.sample_text);
-    tv.setText(stringFromJNI());
+        // Example of a call to a native method
+        TextView tv = (TextView) findViewById(R.id.sample_text);
+        tv.setText(stringFromJNI());
     }
 
     /**
@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Called when the user clicks the take picture button
     public void takePicture(View view) {
+        // Start TakePictureActivity
         Intent intent = new Intent(view.getContext(), TakePictureActivity.class);
         view.getContext().startActivity(intent);
     }

@@ -23,8 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class TakePictureActivity extends AppCompatActivity {
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-    String mCurrentPhotoPath;
+    static final String PHOTO_PATH = "curPhotoPath";    // key to savedInstanceBundle for picture location
+    String mCurrentPhotoPath;                           // path to last picture taken
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,15 +33,32 @@ public class TakePictureActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+    public void onWindowFocusChanged (boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+
+        // Format picture if one is available (now that imageView has been created)
+        if (mCurrentPhotoPath != null && hasFocus) {
             setPic();
         }
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        // Save the current photo path
+        savedInstanceState.putString(PHOTO_PATH, mCurrentPhotoPath);
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        // Restore state info and photo path
+        super.onRestoreInstanceState(savedInstanceState);
+        mCurrentPhotoPath = savedInstanceState.getString(PHOTO_PATH);
+    }
+
     // Called when the user clicks the Take a Picture button
     public void dispatchTakePictureIntent(View view) {
-        Snackbar mySnackbar;
+        // Create intent to take a picture
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
         // Ensure that there's a camera activity to handle the intent
@@ -51,23 +68,25 @@ public class TakePictureActivity extends AppCompatActivity {
             try {
                 photoFile = createImageFile(view);
             } catch (IOException ex) {
-                // Error occurred while creating the File
-                mySnackbar = Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.error_file_save, Snackbar.LENGTH_LONG);
-                mySnackbar.show();
+                // Error occurred while creating the file - alert user
+                Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.error_file_save, Snackbar.LENGTH_LONG).show();
             }
+
             // Continue only if the File was successfully created
             if (photoFile != null) {
+                // Get the URI for the file
                 Uri photoURI = FileProvider.getUriForFile(view.getContext(),
                         "edu.psu.armstrong1.gridmeasure.fileprovider",
                         photoFile);
+
+                // Start activity to take picture and save it
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                ((Activity) view.getContext()).startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+                ((Activity) view.getContext()).startActivity(takePictureIntent);
             }
         } else {
-            mySnackbar = Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.warn_no_camera, Snackbar.LENGTH_INDEFINITE);
-            mySnackbar.show();
+            // No camera to handle intent - alert user
+            Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.warn_no_camera, Snackbar.LENGTH_INDEFINITE).show();
         }
-
     }
 
 
@@ -89,21 +108,29 @@ public class TakePictureActivity extends AppCompatActivity {
     }
 
     private void setPic() {
-        float rotate;
+        float rotate;       // number of degrees to rotate picture
 
+        // Get the view the picture will go in
         ImageView imageView = (ImageView) findViewById(R.id.takePicture_imageView);
 
         // Get the dimensions of the View
         int targetW = imageView.getWidth();
         int targetH = imageView.getHeight();
 
-
-        // Get the dimensions of the bitmap
+        // Get the dimensions of the bitmap (from picture at mCurrentPhotoPath)
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
         int photoW = bmOptions.outWidth;
         int photoH = bmOptions.outHeight;
+
+        // Make sure targetW/H aren't zero
+        if (targetH == 0) {
+            targetH = photoH;
+        }
+        if (targetW == 0) {
+            targetW = photoW;
+        }
 
         // Determine how much to scale down the image
         int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
@@ -115,36 +142,61 @@ public class TakePictureActivity extends AppCompatActivity {
 
         Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
 
+        // Try to get the image's rotation
         try {
             ExifInterface exif = new ExifInterface(mCurrentPhotoPath);
             int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
             rotate = exifToDegrees(rotation);
-            Log.d("main", "Rotatation = " + String.valueOf(rotate));
         } catch (IOException e) {
+            // Error getting rotation - alert user
             Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.error_picture_rotation, Snackbar.LENGTH_SHORT).show();
             rotate = 0;
         }
 
-        imageView.setImageBitmap(rotateBitmap(bitmap, rotateToPortrait(rotate, photoH, photoW)));
+        // Put the rotated and scaled picture in the view (rotate picture to dominant view)
+        imageView.setImageBitmap(rotateBitmap(bitmap, rotateToDominant(rotate, photoH, photoW, targetH, targetW)));
     }
 
     public static Bitmap rotateBitmap(Bitmap source, float angle)
     {
+        // Rotate source by angle degrees
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
 
     private static float exifToDegrees(int exifOrientation) {
+        // Decode orientation to degrees
         if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) { return 90; }
         else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {  return 180; }
         else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270) {  return 270; }
         return 0;
     }
 
-    private static float rotateToPortrait(float curRotation, int curHeight, int curWidth) {
-        if ((curRotation == 0 || curRotation == 180) && curWidth > curHeight) {
-            curRotation += 90;
+    private static float rotateToDominant(float curRotation, int curHeight, int curWidth, int viewHeight, int viewWidth) {
+        // Rotate picture to dominant view (portrait or landscape)
+        if (viewHeight > viewWidth) {
+            // Rotate picture to portrait layout
+            if ((curRotation == 0 || curRotation == 180) && curWidth > curHeight) {
+                // Picture's width is greater than height and rotation doesn't affect ratio -
+                //   rotate another 90 degrees
+                curRotation += 90;
+            } else if ((curRotation == 90 || curRotation == 270) && curWidth < curHeight) {
+                // Picture's height is greater than width and rotation flips ratio -
+                //   rotate another 90 degrees
+                curRotation -= 90;
+            }
+        } else if (viewHeight < viewWidth) {
+            // Rotate picture to landscape layout
+            if ((curRotation == 0 || curRotation == 180) && curWidth < curHeight) {
+                // Picture's height is greater than width and rotation doesn't affect ratio -
+                //   rotate another 90 degrees
+                curRotation += 90;
+            } else if ((curRotation == 90 || curRotation == 270) && curWidth > curHeight) {
+                // Picture's width is greater than height and rotation flips ratio -
+                //   rotate another 90 degrees
+                curRotation -= 90;
+            }
         }
 
         return curRotation;

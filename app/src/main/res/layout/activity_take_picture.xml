@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
+<!--CoordinatorLayout needed for better Snackbar experience-->
 <android.support.design.widget.CoordinatorLayout xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main_coordinatorLayout"
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -19,7 +20,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:srcCompat="@android:drawable/screen_background_dark_transparent"/>
+            app:srcCompat="@android:drawable/screen_background_dark_transparent"
+            android:contentDescription="@string/imageView_takePicture_description" />
 
 
         <Button
