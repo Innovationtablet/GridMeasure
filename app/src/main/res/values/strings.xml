@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">GridMeasure</string>
+
+    <!--MainActivity screen-->
+    <string name="button_main_goToTakePicture">Test taking a picture</string>
+
+    <!--TakePictureActivity screen-->
+    <string name="button_takePicture_camera">Take a picture</string>
+    <string name="imageView_takePicture_description">Current Picture</string>
+
+
+    <!--Warning/Error Messages-->
+    <string name="warn_no_camera">No camera app was found.\nYou must have a camera app installed to use this app</string>
+    <string name="error_file_save">Error creating a file to save picture to.</string>
+    <string name="error_picture_rotation">Error detecting orientation of picture.</string>
 </resources>

@@ -1,7 +1,10 @@
 package edu.psu.armstrong1.gridmeasure;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
@@ -11,9 +14,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-    // Example of a call to a native method
-    TextView tv = (TextView) findViewById(R.id.sample_text);
-    tv.setText(stringFromJNI());
+        // Example of a call to a native method
+        TextView tv = (TextView) findViewById(R.id.sample_text);
+        tv.setText(stringFromJNI());
     }
 
     /**
@@ -25,5 +28,12 @@ public class MainActivity extends AppCompatActivity {
     // Used to load the 'native-lib' library on application startup.
     static {
         System.loadLibrary("native-lib");
+    }
+
+    // Called when the user clicks the take picture button
+    public void takePicture(View view) {
+        // Start TakePictureActivity
+        Intent intent = new Intent(view.getContext(), TakePictureActivity.class);
+        view.getContext().startActivity(intent);
     }
 }
