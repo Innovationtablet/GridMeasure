@@ -6,7 +6,8 @@
 
     <!--TakePictureActivity screen-->
     <string name="button_takePicture_camera">Take a picture</string>
-    <string name="imageView_takePicture_description">Current Picture</string>
+    <string name="takePicture_imageView_description">Current Picture</string>
+    <string name="takePicture_magnifyingGlass_description">Magnifying Glass</string>
 
 
     <!--Warning/Error Messages-->
