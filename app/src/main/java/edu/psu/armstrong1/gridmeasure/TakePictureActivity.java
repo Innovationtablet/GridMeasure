@@ -2,16 +2,17 @@ package edu.psu.armstrong1.gridmeasure;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
-import android.media.Image;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -20,16 +21,17 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class TakePictureActivity extends AppCompatActivity {
     static final int ZOOM_SIZE = 50;                            // number of pixels (square) to show for magnification
@@ -50,8 +52,10 @@ public class TakePictureActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //Remove title bar
-        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        // Hide the status bar.
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
 
         //Remove notification bar
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -104,7 +108,7 @@ public class TakePictureActivity extends AppCompatActivity {
                 photoFile = createImageFile(view);
             } catch (IOException ex) {
                 // Error occurred while creating the file - alert user
-                Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.error_file_save, Snackbar.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), R.string.error_file_save, Toast.LENGTH_SHORT).show();
             }
 
             // Continue only if the File was successfully created
@@ -114,13 +118,20 @@ public class TakePictureActivity extends AppCompatActivity {
                         "edu.psu.armstrong1.gridmeasure.fileprovider",
                         photoFile);
 
+                // Get permissions
+                List<ResolveInfo> resInfoList = getApplicationContext().getPackageManager().queryIntentActivities(takePictureIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (ResolveInfo resolveInfo : resInfoList) {
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    getApplicationContext().grantUriPermission(packageName, photoURI, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
+
                 // Start activity to take picture and save it
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 ((Activity) view.getContext()).startActivity(takePictureIntent);
             }
         } else {
             // No camera to handle intent - alert user
-            Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.warn_no_camera, Snackbar.LENGTH_INDEFINITE).show();
+            Toast.makeText(getApplicationContext(), R.string.warn_no_camera, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -167,7 +178,7 @@ public class TakePictureActivity extends AppCompatActivity {
             rotate = exifToDegrees(rotation);
         } catch (IOException e) {
             // Error getting rotation - alert user
-            Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.error_picture_rotation, Snackbar.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), R.string.error_picture_rotation, Toast.LENGTH_LONG).show();
             rotate = 0;
         }
 

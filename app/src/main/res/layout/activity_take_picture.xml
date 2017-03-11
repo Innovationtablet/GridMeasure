@@ -1,52 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!--CoordinatorLayout needed for better Snackbar experience-->
-<android.support.design.widget.CoordinatorLayout
+<LinearLayout
+    android:id="@+id/takePicture_linearLayout"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main_coordinatorLayout"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <LinearLayout
-        android:id="@+id/takePicture_linearLayout"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="edu.psu.armstrong1.gridmeasure.TakePictureActivity">
+    <FrameLayout
+        android:id="@+id/takePicture_frameLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        tools:context="edu.psu.armstrong1.gridmeasure.TakePictureActivity">
+        android:layout_weight="1">
 
-        <FrameLayout
-            android:id="@+id/takePicture_frameLayout"
+        <ImageView
+            android:id="@+id/takePicture_imageView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1">
+            android:contentDescription="@string/takePicture_imageView_description" />
 
-
-            <ImageView
-                android:id="@+id/takePicture_imageView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:srcCompat="@android:drawable/screen_background_dark_transparent"
-                android:contentDescription="@string/takePicture_imageView_description" />
-
-            <ImageView
-                android:id="@+id/takePicture_magnifyingGlass"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_gravity="right|top"
-                app:srcCompat="@android:color/transparent"
-                android:contentDescription="@string/takePicture_magnifyingGlass_description" />
-
-        </FrameLayout>
-
-        <Button
-            android:id="@+id/button_takePicture"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="0"
-            android:text="@string/button_takePicture_camera"
-            android:onClick="dispatchTakePictureIntent"/>
-
-    </LinearLayout>
-</android.support.design.widget.CoordinatorLayout>
+        <ImageView
+            android:id="@+id/takePicture_magnifyingGlass"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="right|top"
+            android:contentDescription="@string/takePicture_magnifyingGlass_description"/>
+    </FrameLayout>
+    <Button
+        android:id="@+id/button_takePicture"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:text="@string/button_takePicture_camera"
+        android:onClick="dispatchTakePictureIntent"/>
+</LinearLayout>
