@@ -7,11 +7,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
-import android.media.Image;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -20,11 +18,11 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -104,7 +102,7 @@ public class TakePictureActivity extends AppCompatActivity {
                 photoFile = createImageFile(view);
             } catch (IOException ex) {
                 // Error occurred while creating the file - alert user
-                Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.error_file_save, Snackbar.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), R.string.error_file_save, Toast.LENGTH_SHORT).show();
             }
 
             // Continue only if the File was successfully created
@@ -120,7 +118,7 @@ public class TakePictureActivity extends AppCompatActivity {
             }
         } else {
             // No camera to handle intent - alert user
-            Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.warn_no_camera, Snackbar.LENGTH_INDEFINITE).show();
+            Toast.makeText(getApplicationContext(), R.string.warn_no_camera, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -167,7 +165,7 @@ public class TakePictureActivity extends AppCompatActivity {
             rotate = exifToDegrees(rotation);
         } catch (IOException e) {
             // Error getting rotation - alert user
-            Snackbar.make(findViewById(R.id.main_coordinatorLayout), R.string.error_picture_rotation, Snackbar.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), R.string.error_picture_rotation, Toast.LENGTH_LONG).show();
             rotate = 0;
         }
 
