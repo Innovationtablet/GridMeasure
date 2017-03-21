@@ -11,7 +11,6 @@ import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.media.ExifInterface;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
@@ -22,7 +21,6 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -44,9 +42,11 @@ public class TakePictureActivity extends AppCompatActivity {
     String mCurrentPhotoPath;                                   // path to last picture taken
     Bitmap bitmap;                                              // the current picture
     Bitmap magnified;                                           // the magnified picture
-    float zoomPosX = 0;                                         // x-coordinate for zoom location
-    float zoomPosY = 0;                                         // y-coordinate for zoom location
+    float zoomImageViewX = 0;                                   // x-coordinate for zoom location
+    float zoomImageViewY = 0;                                   // y-coordinate for zoom location
+    int zoomLocX, zoomLocY;                                     // x,y-coordinates for zoom location in bitmap
     int photoH, photoW;                                         // dimensions of the picture
+    float scaleFactor;                                          // scale factor of the picture to fit the image view
     float imageWidthDif = 0;                                    // difference in width between the scaled picture and the image view
     float imageHeightDif = 0;                                   // difference in height between the scaled picture and the image view
     boolean zooming = false;                                    // whether or not to zoom
@@ -203,7 +203,7 @@ public class TakePictureActivity extends AppCompatActivity {
         }
 
         // Determine how much the image will be scaled down
-        final float scaleFactor = Math.min(((float) targetW) / photoW, ((float) targetH) / photoH);
+        scaleFactor = Math.min(((float) targetW) / photoW, ((float) targetH) / photoH);
 
         // Get the padding around the image
         imageWidthDif = (targetW - photoW * scaleFactor) / 2;
@@ -223,98 +223,31 @@ public class TakePictureActivity extends AppCompatActivity {
                 int action = event.getAction();
 
                 // Get the location of the event
-                zoomPosX = event.getX();
-                zoomPosY = event.getY();
+                zoomImageViewX = event.getX();
+                zoomImageViewY = event.getY();
 
                 // Turn on zooming if screen is being touched, off otherwise
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
                     case MotionEvent.ACTION_MOVE:
-                        zooming = true;
+                        zoomLocation(zoomImageViewX, zoomImageViewY, false);
                         break;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
-                        zooming = false;
+                        stopZooming();
                         break;
 
                     default:
                         break;
                 }
 
-                Log.d("takePicture", "Zoom (" + (zoomPosX - imageWidthDif) +", " + (zoomPosY - imageHeightDif) + "); Zooming = " + zooming);
-
-                // Get the magnifier view
-                ImageView magnifier = (ImageView) findViewById(R.id.takePicture_magnifyingGlass);
-
-                if (zooming) {
-                    // Get location in bitmap for magnification
-                    int zoomLocX = (int) ((zoomPosX - imageWidthDif) / scaleFactor);
-                    int zoomLocY = (int) ((zoomPosY - imageHeightDif) / scaleFactor);
-
-                    // Get beginning position in bitmap for magnification
-                    int beginX = Math.max(0, zoomLocX - ZOOM_SIZE / 2);
-                    int beginY = Math.max(0, zoomLocY - ZOOM_SIZE / 2);
-                    int endX = Math.min(bitmap.getWidth(), beginX + ZOOM_SIZE);
-                    int endY = Math.min(bitmap.getHeight(), beginY + ZOOM_SIZE);
-
-                    // Make sure window is ZOOM_SIZE x ZOOM_SIZE
-                    if (endX - beginX < ZOOM_SIZE && beginX != 0) {
-                        // if beginX = 0, either endX=beginX + ZOOM_SIZE or endX is as large as possible
-                        // if beginX != 0, endX must be as large as possible
-                        beginX = Math.max(0, endX - ZOOM_SIZE);
-                    }
-                    if (endY - beginY < ZOOM_SIZE && beginY != 0) {
-                        // if beginY = 0, either endY=beginY + ZOOM_SIZE or endY is as large as possible
-                        // if beginY != 0, endY must be as large as possible
-                        beginY = Math.max(0, endY - ZOOM_SIZE);
-                    }
-
-                    // Extract portion of picture to magnify
-                    magnified = Bitmap.createBitmap(bitmap, beginX, beginY, endX - beginX, endY - beginY);
-
-                    // Get bounded box around where user is touching
-                    int indicatorBeginX = Math.min(magnified.getWidth() - 1, Math.max(0, (zoomLocX - beginX) - MAGNIFIER_INDICATOR_SIZE / 2));
-                    int indicatorBeginY = Math.min(magnified.getHeight() - 1, Math.max(0, (zoomLocY - beginY) - MAGNIFIER_INDICATOR_SIZE / 2));
-                    int indicatorEndX = Math.min(magnified.getWidth() - 1, indicatorBeginX + MAGNIFIER_INDICATOR_SIZE);
-                    int indicatorEndY = Math.min(magnified.getHeight() - 1, indicatorBeginY + MAGNIFIER_INDICATOR_SIZE);
-
-                    // Add a box for where user is touching
-                    for (int i = indicatorBeginX; i <= indicatorEndX; i++) {
-                        for (int j = indicatorBeginY; j <= indicatorEndY; j++) {
-                            magnified.setPixel(i, j, INDICATOR_COLOR);
-                        }
-                    }
-
-                    // Put the magnified picture in the view
-                    magnifier.setImageBitmap(magnified);
-
-                    // Make sure magnifier isn't blocking where touch input is
-                    FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) magnifier.getLayoutParams();
-                    if ((endX >= bitmap.getWidth() - (1.5 * magnifier.getWidth() / scaleFactor)) &&
-                            (endY <= 1.5 * magnifier.getHeight() / scaleFactor)) {
-                        // Touch input is near magnifier view (top right) - move magnifier to top left
-                        params.gravity = Gravity.LEFT | Gravity.TOP;
-                    } else {
-                        // Magnifier can stay in top right
-                        params.gravity = Gravity.RIGHT | Gravity.TOP;
-                    }
-
-                    // Set the gravity to desired location
-                    magnifier.setLayoutParams(params);
-
-                    // Show the magnifier view
-                    magnifier.setVisibility(View.VISIBLE);
-                } else {
-                    // Not zooming - hide magnifier
-                    magnifier.setVisibility(View.INVISIBLE);
-                }
 
                 return true;
-
-
             }
         });
-        Log.d("takePicture", "Zoom (" + (zoomPosX - imageWidthDif) +", " + (zoomPosY - imageHeightDif) + "); Zooming = " + zooming);
+
+
+        Log.d("takePicture", "Zoom at view coords (" + (zoomImageViewX - imageWidthDif) +", " + (zoomImageViewY - imageHeightDif) + "); Zooming = " + zooming);
 
         PolygonView polygonView = (PolygonView) findViewById(R.id.polygonView);
         Log.d("takePicture", "Pic dim (" + (targetW) +", " + (targetH)+ ")" );
@@ -322,6 +255,7 @@ public class TakePictureActivity extends AppCompatActivity {
         Log.d("takePicture", "0,max (" + (targetW-imageWidthDif) +", " + (imageHeightDif)+ ")" );
         Log.d("takePicture", "max,0 (" + (imageWidthDif) +", " + (targetH-imageHeightDif)+ ")" );
         Log.d("takePicture", "max,max (" + (targetW-imageWidthDif) +", " + (targetH-imageHeightDif)+ ")" );
+
         Map<Integer, PointF> pointf = getOutlinePoints( imageView);
         polygonView.setPoints(pointf);
         polygonView.setVisibility(View.VISIBLE);
@@ -329,6 +263,7 @@ public class TakePictureActivity extends AppCompatActivity {
     }
 
     private Map<Integer, PointF> getOutlinePoints(ImageView view) {
+        // Place beginning points in a rectangle around the center to take up about half the image view
         Map<Integer, PointF> outlinePoints = new HashMap<>();
         outlinePoints.put(0, new PointF(view.getWidth() / 4, view.getHeight() / 4));
         outlinePoints.put(1, new PointF(3 * view.getWidth() / 4, view.getHeight() / 4));
@@ -380,5 +315,96 @@ public class TakePictureActivity extends AppCompatActivity {
         }
 
         return curRotation;
+    }
+
+    // Note: If bitmapCoords = true, (x,y) is with respect to the bitmap, i.e., (0,0) is top left of bitmap
+    //          Else, (x,y) is with respect to the imageView, i.e., (0,0) is top left of imageView
+    public void zoomLocation(float zoomPosX, float zoomPosY, boolean bitmapCoords) {
+        Log.d("TakePictureActivity", "zoomLocation(" + zoomPosX + ", " + zoomPosY + ", " + bitmapCoords + ")");
+
+        PolygonView polygonView = (PolygonView) findViewById(R.id.polygonView);
+        Log.d("TakePictureActivity", "Points: " + polygonView.getPoints());
+        if (!bitmapCoords) {
+            // Get location in bitmap for magnification
+            zoomLocX = (int) ((zoomPosX - imageWidthDif) / scaleFactor);
+            zoomLocY = (int) ((zoomPosY - imageHeightDif) / scaleFactor);
+        } else {
+            zoomLocX = (int) zoomPosX;
+            zoomLocY = (int) zoomPosY;
+        }
+
+        zooming = true;
+        zoomLocation();
+    }
+
+    public void stopZooming() {
+        zooming = false;
+        zoomLocation();
+    }
+
+    private void zoomLocation() {
+        Log.d("takePicture", "Zoom at bitmap coords (" + zoomLocX +", " + zoomLocY + "); Zooming = " + zooming);
+
+        // Get the magnifier view
+        ImageView magnifier = (ImageView) findViewById(R.id.takePicture_magnifyingGlass);
+
+        if (zooming) {
+            // Get beginning position in bitmap for magnification
+            int beginX = Math.max(0, zoomLocX - ZOOM_SIZE / 2);
+            int beginY = Math.max(0, zoomLocY - ZOOM_SIZE / 2);
+            int endX = Math.min(bitmap.getWidth(), beginX + ZOOM_SIZE);
+            int endY = Math.min(bitmap.getHeight(), beginY + ZOOM_SIZE);
+
+            // Make sure window is ZOOM_SIZE x ZOOM_SIZE
+            if (endX - beginX < ZOOM_SIZE && beginX != 0) {
+                // if beginX = 0, either endX=beginX + ZOOM_SIZE or endX is as large as possible
+                // if beginX != 0, endX must be as large as possible
+                beginX = Math.max(0, endX - ZOOM_SIZE);
+            }
+            if (endY - beginY < ZOOM_SIZE && beginY != 0) {
+                // if beginY = 0, either endY=beginY + ZOOM_SIZE or endY is as large as possible
+                // if beginY != 0, endY must be as large as possible
+                beginY = Math.max(0, endY - ZOOM_SIZE);
+            }
+
+            // Extract portion of picture to magnify
+            magnified = Bitmap.createBitmap(bitmap, beginX, beginY, endX - beginX, endY - beginY);
+
+            // Get bounded box around where user is touching
+            int indicatorBeginX = Math.min(magnified.getWidth() - 1, Math.max(0, (zoomLocX - beginX) - MAGNIFIER_INDICATOR_SIZE / 2));
+            int indicatorBeginY = Math.min(magnified.getHeight() - 1, Math.max(0, (zoomLocY - beginY) - MAGNIFIER_INDICATOR_SIZE / 2));
+            int indicatorEndX = Math.min(magnified.getWidth() - 1, indicatorBeginX + MAGNIFIER_INDICATOR_SIZE);
+            int indicatorEndY = Math.min(magnified.getHeight() - 1, indicatorBeginY + MAGNIFIER_INDICATOR_SIZE);
+
+            // Add a box for where user is touching
+            for (int i = indicatorBeginX; i <= indicatorEndX; i++) {
+                for (int j = indicatorBeginY; j <= indicatorEndY; j++) {
+                    magnified.setPixel(i, j, INDICATOR_COLOR);
+                }
+            }
+
+            // Put the magnified picture in the view
+            magnifier.setImageBitmap(magnified);
+
+            // Make sure magnifier isn't blocking where touch input is
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) magnifier.getLayoutParams();
+            if ((endX >= bitmap.getWidth() - (1.5 * magnifier.getWidth() / scaleFactor)) &&
+                    (endY <= 1.5 * magnifier.getHeight() / scaleFactor)) {
+                // Touch input is near magnifier view (top right) - move magnifier to top left
+                params.gravity = Gravity.LEFT | Gravity.TOP;
+            } else {
+                // Magnifier can stay in top right
+                params.gravity = Gravity.RIGHT | Gravity.TOP;
+            }
+
+            // Set the gravity to desired location
+            magnifier.setLayoutParams(params);
+
+            // Show the magnifier view
+            magnifier.setVisibility(View.VISIBLE);
+        } else {
+            // Not zooming - hide magnifier
+            magnifier.setVisibility(View.INVISIBLE);
+        }
     }
 }

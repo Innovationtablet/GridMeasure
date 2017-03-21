@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -180,6 +181,7 @@ public class PolygonView extends FrameLayout {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
+            Log.d("PolygonView", "MidPointTouchListenerImpl event: " + event);
             int eid = event.getAction();
             switch (eid) {
                 case MotionEvent.ACTION_MOVE:
@@ -228,6 +230,10 @@ public class PolygonView extends FrameLayout {
                     break;
             }
             polygonView.invalidate();
+
+            // Check if zoom should be turned on
+            checkZoom(event, v);
+
             return true;
         }
     }
@@ -248,6 +254,7 @@ public class PolygonView extends FrameLayout {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
+            Log.d("PolygonView", "TouchListenerImpl event: " + event);
             int eid = event.getAction();
             switch (eid) {
                 case MotionEvent.ACTION_MOVE:
@@ -276,9 +283,33 @@ public class PolygonView extends FrameLayout {
                     break;
             }
             polygonView.invalidate();
+
+            // Check if zoom should be turned on
+            checkZoom(event, v);
+
             return true;
         }
 
+    }
+
+    private void checkZoom(MotionEvent event, View view) {
+        int eid = event.getAction();
+
+        // Turn on zooming if screen is being touched, off otherwise
+        switch (eid) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_MOVE:
+                // Zoom in on center of circle
+                ((TakePictureActivity) context).zoomLocation(view.getX() + view.getWidth() / 2, view.getY() + view.getHeight() / 2, false);
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                ((TakePictureActivity) context).stopZooming();
+                break;
+
+            default:
+                break;
+        }
     }
 
 

@@ -21,19 +21,19 @@
             android:layout_height="match_parent"
             android:contentDescription="@string/takePicture_imageView_description" />
 
-        <ImageView
-            android:id="@+id/takePicture_magnifyingGlass"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_gravity="right|top"
-            android:contentDescription="@string/takePicture_magnifyingGlass_description"/>
-
         <edu.psu.armstrong1.gridmeasure.PolygonView
             android:id="@+id/polygonView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center"
             android:visibility="gone"></edu.psu.armstrong1.gridmeasure.PolygonView>
+
+        <ImageView
+            android:id="@+id/takePicture_magnifyingGlass"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="right|top"
+            android:contentDescription="@string/takePicture_magnifyingGlass_description"/>
 
     </FrameLayout>
     <Button
