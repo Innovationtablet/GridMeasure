@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.PointF;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
@@ -31,7 +32,9 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TakePictureActivity extends AppCompatActivity {
     static final int ZOOM_SIZE = 50;                            // number of pixels (square) to show for magnification
@@ -164,8 +167,8 @@ public class TakePictureActivity extends AppCompatActivity {
         int targetH = imageView.getHeight();
 
         // Load the bitmap (from picture at mCurrentPhotoPath)
-        bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath);
-
+       // bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath);
+        bitmap = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.test_img2);
         // Get the picture's dimensions
         photoW = bitmap.getWidth();
         photoH = bitmap.getHeight();
@@ -307,8 +310,31 @@ public class TakePictureActivity extends AppCompatActivity {
                 }
 
                 return true;
+
+
             }
         });
+        Log.d("takePicture", "Zoom (" + (zoomPosX - imageWidthDif) +", " + (zoomPosY - imageHeightDif) + "); Zooming = " + zooming);
+
+        PolygonView polygonView = (PolygonView) findViewById(R.id.polygonView);
+        Log.d("takePicture", "Pic dim (" + (targetW) +", " + (targetH)+ ")" );
+        Log.d("takePicture", "0,0 (" + (imageWidthDif) +", " + (imageHeightDif)+ ")" );
+        Log.d("takePicture", "0,max (" + (targetW-imageWidthDif) +", " + (imageHeightDif)+ ")" );
+        Log.d("takePicture", "max,0 (" + (imageWidthDif) +", " + (targetH-imageHeightDif)+ ")" );
+        Log.d("takePicture", "max,max (" + (targetW-imageWidthDif) +", " + (targetH-imageHeightDif)+ ")" );
+        Map<Integer, PointF> pointf = getOutlinePoints( imageView);
+        polygonView.setPoints(pointf);
+        polygonView.setVisibility(View.VISIBLE);
+
+    }
+
+    private Map<Integer, PointF> getOutlinePoints(ImageView view) {
+        Map<Integer, PointF> outlinePoints = new HashMap<>();
+        outlinePoints.put(0, new PointF(view.getWidth() / 4, view.getHeight() / 4));
+        outlinePoints.put(1, new PointF(3 * view.getWidth() / 4, view.getHeight() / 4));
+        outlinePoints.put(2, new PointF(view.getWidth() / 4, 3 * view.getHeight() / 4));
+        outlinePoints.put(3, new PointF(3 * view.getWidth() / 4, 3 * view.getHeight() / 4));
+        return outlinePoints;
     }
 
     public static Bitmap rotateBitmap(Bitmap source, float angle)

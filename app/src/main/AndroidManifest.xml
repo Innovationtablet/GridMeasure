@@ -40,7 +40,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <activity android:name=".PolygonView"></activity>
     </application>
 
 </manifest>
