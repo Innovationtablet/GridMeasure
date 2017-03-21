@@ -27,6 +27,14 @@
             android:layout_height="100dp"
             android:layout_gravity="right|top"
             android:contentDescription="@string/takePicture_magnifyingGlass_description"/>
+
+        <edu.psu.armstrong1.gridmeasure.PolygonView
+            android:id="@+id/polygonView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:visibility="gone"></edu.psu.armstrong1.gridmeasure.PolygonView>
+
     </FrameLayout>
     <Button
         android:id="@+id/button_takePicture"
@@ -35,4 +43,5 @@
         android:layout_weight="0"
         android:text="@string/button_takePicture_camera"
         android:onClick="dispatchTakePictureIntent"/>
+
 </LinearLayout>

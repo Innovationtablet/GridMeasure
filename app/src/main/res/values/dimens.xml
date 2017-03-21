@@ -2,4 +2,10 @@
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
+    //Used for drawable.xml references for tap-able spheres
+    <dimen name="polygonViewCircleWidth">32dp</dimen>
+    <dimen name="polygonViewStrokeWidth">2dp</dimen>
+    <!-- ScanPadding must be half of polygonViewCircleWidth -->
+
+
 </resources>

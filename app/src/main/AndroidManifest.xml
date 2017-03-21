@@ -3,14 +3,17 @@
     package="edu.psu.armstrong1.gridmeasure">
 
     <!-- Permissions -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="18" />   <!-- Used for storing pictures in private location -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="18" /> <!-- Used for storing pictures in private location -->
 
 
     <!-- Features -->
-    <uses-feature android:name="android.hardware.camera"
-        android:required="true" />  <!-- Used for taking a picture -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
 
+    <!-- Used for taking a picture -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -24,8 +27,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".TakePictureActivity">
-        </activity>
+        <activity android:name=".TakePictureActivity"></activity>
 
         <!-- File Provider for saving pictures -->
         <provider
@@ -35,8 +37,9 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths"></meta-data>
+                android:resource="@xml/file_paths" />
         </provider>
+
     </application>
 
 </manifest>
