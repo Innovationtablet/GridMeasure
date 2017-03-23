@@ -36,12 +36,30 @@
             android:contentDescription="@string/takePicture_magnifyingGlass_description"/>
 
     </FrameLayout>
-    <Button
-        android:id="@+id/button_takePicture"
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="0"
-        android:text="@string/button_takePicture_camera"
-        android:onClick="dispatchTakePictureIntent"/>
+        android:layout_weight="0">
+
+        <Button
+            android:id="@+id/button_takePicture"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/button_takePicture_camera"
+            android:onClick="dispatchTakePictureIntent"/>
+
+
+        <Button
+            android:id="@+id/button_AcceptOutline"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/button_takePicture_accept"
+            android:onClick="dispatchCalculationIntent"
+            android:visibility="gone"/>
+
+    </LinearLayout>
 
 </LinearLayout>

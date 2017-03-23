@@ -25,8 +25,22 @@ public class MainActivity extends AppCompatActivity {
 
     // Called when the user clicks the take picture button
     public void takePicture(View view) {
+        // Start TakePictureActivity without debug on
+        startPictureActivity(view, false);
+    }
+
+    // Called when the user clicks the take picture button
+    public void takePictureTest(View view) {
+        // Start TakePictureActivity with debug on
+        startPictureActivity(view, true);
+    }
+
+    private void startPictureActivity(View view, boolean debugOn) {
         // Start TakePictureActivity
         Intent intent = new Intent(view.getContext(), TakePictureActivity.class);
+        intent.putExtra("DEBUG_FLAG", debugOn);
         view.getContext().startActivity(intent);
     }
+
+
 }

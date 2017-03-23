@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.PointF;
+import android.graphics.Point;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Environment;
@@ -35,11 +36,12 @@ import java.util.List;
 import java.util.Map;
 
 public class TakePictureActivity extends AppCompatActivity {
+    static boolean DEBUGGING_MODE = false;                      // flag denoting whether or not to show the test image
     static final int ZOOM_SIZE = 50;                            // number of pixels (square) to show for magnification
     static final int MAGNIFIER_INDICATOR_SIZE = 5;              // number of pixels (square) to use as an indicator for magnifier
     static final int INDICATOR_COLOR = Color.rgb(255, 0, 0);    // color of the indicator for the magnifier
     static final String PHOTO_PATH = "curPhotoPath";            // key to savedInstanceBundle for picture location
-    String mCurrentPhotoPath;                                   // path to last picture taken
+    String mCurrentPhotoPath = null;                            // path to last picture taken
     Bitmap bitmap;                                              // the current picture
     Bitmap magnified;                                           // the magnified picture
     float zoomImageViewX = 0;                                   // x-coordinate for zoom location
@@ -50,6 +52,7 @@ public class TakePictureActivity extends AppCompatActivity {
     float imageWidthDif = 0;                                    // difference in width between the scaled picture and the image view
     float imageHeightDif = 0;                                   // difference in height between the scaled picture and the image view
     boolean zooming = false;                                    // whether or not to zoom
+    PolygonView polygonView;                                    // the PolygonView for the bounding box
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +73,9 @@ public class TakePictureActivity extends AppCompatActivity {
         if (bar != null) {
             bar.hide();
         }
+
+        // Check for debug flag
+        DEBUGGING_MODE = getIntent().getBooleanExtra("DEBUG_FLAG", false);
     }
 
     @Override
@@ -77,7 +83,7 @@ public class TakePictureActivity extends AppCompatActivity {
         super.onWindowFocusChanged(hasFocus);
 
         // Format picture if one is available (now that imageView has been created)
-        if (mCurrentPhotoPath != null && hasFocus) {
+        if ((mCurrentPhotoPath != null || DEBUGGING_MODE) && hasFocus) {
             setPic();
         }
     }
@@ -138,6 +144,10 @@ public class TakePictureActivity extends AppCompatActivity {
         }
     }
 
+    // Called when the user clicks the Accept Outline button
+    public void dispatchCalculationIntent(View view) {
+        // stub function to be filled in
+    }
 
     private File createImageFile(View view) throws IOException {
         // Create an image file name
@@ -159,6 +169,31 @@ public class TakePictureActivity extends AppCompatActivity {
     private void setPic() {
         float rotate;       // number of degrees to rotate picture
 
+        // Check if this is debugging mode
+        if (DEBUGGING_MODE) {
+            // Debug mode - Use debugging/test image
+            bitmap = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.test_img2);
+            rotate = 90;
+        } else {
+            // Load the bitmap (from picture at mCurrentPhotoPath)
+            bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath);
+
+            // Try to get the image's rotation
+            try {
+                ExifInterface exif = new ExifInterface(mCurrentPhotoPath);
+                int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                rotate = exifToDegrees(rotation);
+            } catch (IOException e) {
+                // Error getting rotation - alert user
+                Toast.makeText(getApplicationContext(), R.string.error_picture_rotation, Toast.LENGTH_LONG).show();
+                rotate = 0;
+            }
+        }
+
+        // Get the picture's dimensions
+        photoW = bitmap.getWidth();
+        photoH = bitmap.getHeight();
+
         // Get the view the picture will go in
         ImageView imageView = (ImageView) findViewById(R.id.takePicture_imageView);
 
@@ -166,29 +201,9 @@ public class TakePictureActivity extends AppCompatActivity {
         int targetW = imageView.getWidth();
         int targetH = imageView.getHeight();
 
-        // Load the bitmap (from picture at mCurrentPhotoPath)
-       // bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath);
-        bitmap = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.test_img2);
-        // Get the picture's dimensions
-        photoW = bitmap.getWidth();
-        photoH = bitmap.getHeight();
-
-
-        // Try to get the image's rotation
-        try {
-            ExifInterface exif = new ExifInterface(mCurrentPhotoPath);
-            int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            rotate = exifToDegrees(rotation);
-        } catch (IOException e) {
-            // Error getting rotation - alert user
-            Toast.makeText(getApplicationContext(), R.string.error_picture_rotation, Toast.LENGTH_LONG).show();
-            rotate = 0;
-        }
-
         // Put the rotated and scaled picture in the view (rotate picture to dominant view)
         bitmap = rotateBitmap(bitmap, rotateToDominant(rotate, photoH, photoW, targetH, targetW));
         imageView.setImageBitmap(bitmap);
-
 
         // Get updated picture dimensions after rotation
         photoW = bitmap.getWidth();
@@ -241,25 +256,18 @@ public class TakePictureActivity extends AppCompatActivity {
                         break;
                 }
 
-
                 return true;
             }
         });
 
-
-        Log.d("takePicture", "Zoom at view coords (" + (zoomImageViewX - imageWidthDif) +", " + (zoomImageViewY - imageHeightDif) + "); Zooming = " + zooming);
-
-        PolygonView polygonView = (PolygonView) findViewById(R.id.polygonView);
-        Log.d("takePicture", "Pic dim (" + (targetW) +", " + (targetH)+ ")" );
-        Log.d("takePicture", "0,0 (" + (imageWidthDif) +", " + (imageHeightDif)+ ")" );
-        Log.d("takePicture", "0,max (" + (targetW-imageWidthDif) +", " + (imageHeightDif)+ ")" );
-        Log.d("takePicture", "max,0 (" + (imageWidthDif) +", " + (targetH-imageHeightDif)+ ")" );
-        Log.d("takePicture", "max,max (" + (targetW-imageWidthDif) +", " + (targetH-imageHeightDif)+ ")" );
-
-        Map<Integer, PointF> pointf = getOutlinePoints( imageView);
+        // Add bounding box to image
+        polygonView = (PolygonView) findViewById(R.id.polygonView);
+        Map<Integer, PointF> pointf = getOutlinePoints(imageView);
         polygonView.setPoints(pointf);
         polygonView.setVisibility(View.VISIBLE);
 
+        // Show Accept Outline button
+        findViewById(R.id.button_AcceptOutline).setVisibility(View.VISIBLE);
     }
 
     private Map<Integer, PointF> getOutlinePoints(ImageView view) {
@@ -269,6 +277,7 @@ public class TakePictureActivity extends AppCompatActivity {
         outlinePoints.put(1, new PointF(3 * view.getWidth() / 4, view.getHeight() / 4));
         outlinePoints.put(2, new PointF(view.getWidth() / 4, 3 * view.getHeight() / 4));
         outlinePoints.put(3, new PointF(3 * view.getWidth() / 4, 3 * view.getHeight() / 4));
+        Log.d("TakePictureActivity", "Starting Points:" + outlinePoints);
         return outlinePoints;
     }
 
@@ -321,13 +330,11 @@ public class TakePictureActivity extends AppCompatActivity {
     //          Else, (x,y) is with respect to the imageView, i.e., (0,0) is top left of imageView
     public void zoomLocation(float zoomPosX, float zoomPosY, boolean bitmapCoords) {
         Log.d("TakePictureActivity", "zoomLocation(" + zoomPosX + ", " + zoomPosY + ", " + bitmapCoords + ")");
-
-        PolygonView polygonView = (PolygonView) findViewById(R.id.polygonView);
         Log.d("TakePictureActivity", "Points: " + polygonView.getPoints());
         if (!bitmapCoords) {
             // Get location in bitmap for magnification
-            zoomLocX = (int) ((zoomPosX - imageWidthDif) / scaleFactor);
-            zoomLocY = (int) ((zoomPosY - imageHeightDif) / scaleFactor);
+            zoomLocX = convertViewToBitmapCoords(zoomPosX, true);
+            zoomLocY = convertViewToBitmapCoords(zoomPosY, false);
         } else {
             zoomLocX = (int) zoomPosX;
             zoomLocY = (int) zoomPosY;
@@ -406,5 +413,62 @@ public class TakePictureActivity extends AppCompatActivity {
             // Not zooming - hide magnifier
             magnifier.setVisibility(View.INVISIBLE);
         }
+    }
+
+    private int convertViewToBitmapCoords(float viewCoord, boolean isXCoord) {
+        int bitmapCoord;
+
+        if (isXCoord) {
+            // x-coordinate - subtract width padding
+            bitmapCoord = (int) ((viewCoord - imageWidthDif) / scaleFactor);
+        } else {
+            // y-coordinate - subtract height padding
+            bitmapCoord = (int) ((viewCoord - imageHeightDif) / scaleFactor);
+        }
+
+        return bitmapCoord;
+    }
+
+    private float convertBitmapToViewCoords(int bitmapCoord, boolean isXCoord) {
+        float viewCoord;
+
+        if (isXCoord) {
+            // x-coordinate - add width padding
+            viewCoord = (((float) bitmapCoord) * scaleFactor) + imageWidthDif;
+        } else {
+            // y-coordinate - add height padding
+            viewCoord = (((float) bitmapCoord) * scaleFactor) + imageHeightDif;
+        }
+
+        return viewCoord;
+    }
+
+    // Note: If adjustForPolygonViewCircles is true, the output will be the coordinates such that the
+    //          center of the circle will be over the input coordinates
+    private PointF convertBitmapToViewPoint(int bitmapX, int bitmapY, boolean adjustForPolygonViewCircles) {
+        float xCoord = convertBitmapToViewCoords(bitmapX, true);
+        float yCoord = convertBitmapToViewCoords(bitmapY, false);
+
+        if (adjustForPolygonViewCircles) {
+            xCoord -= polygonView.circleDiameter / 2;
+            yCoord -= polygonView.circleDiameter / 2;
+        }
+
+        return new PointF(xCoord, yCoord);
+    }
+
+    // Note: If adjustForPolygonViewCircles is true, the input location is taken as the circle's location
+    //          which is the top left of the circle, and the output will be the coordinates
+    //          corresponding to the center of the circle
+    private Point convertViewToBitmapPoint(float viewX, float viewY, boolean adjustForPolygonViewCircles) {
+        if (adjustForPolygonViewCircles) {
+            viewX += polygonView.circleDiameter / 2;
+            viewY += polygonView.circleDiameter / 2;
+        }
+
+        int xCoord = convertViewToBitmapCoords(viewX, true);
+        int yCoord = convertViewToBitmapCoords(viewY, false);
+
+        return new Point(xCoord, yCoord);
     }
 }

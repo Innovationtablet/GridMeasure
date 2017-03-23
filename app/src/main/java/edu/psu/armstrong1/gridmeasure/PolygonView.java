@@ -39,12 +39,13 @@ import java.util.Map;
 public class PolygonView extends FrameLayout {
 
     protected Context context;
-    private Paint paint;
-    private ImageView pointer1;
+    private Paint paint;                        // Paint object describing how to draw lines
+    private ImageView pointer1;                 // the points of the bounding box
     private ImageView pointer2;
     private ImageView pointer3;
     private ImageView pointer4;
-    private PolygonView polygonView;
+    private PolygonView polygonView;            // reference to this
+    public float circleDiameter;                 // diameter of each circle point
 
     public PolygonView(Context context) {
         super(context);
@@ -70,6 +71,7 @@ public class PolygonView extends FrameLayout {
         pointer2 = getImageView(getWidth(), 0);
         pointer3 = getImageView(0, getHeight());
         pointer4 = getImageView(getWidth(), getHeight());
+        circleDiameter = pointer1.getWidth();
 
         addView(pointer1);
         addView(pointer2);
@@ -311,6 +313,5 @@ public class PolygonView extends FrameLayout {
                 break;
         }
     }
-
 
 }

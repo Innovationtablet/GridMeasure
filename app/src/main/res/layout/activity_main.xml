@@ -25,4 +25,14 @@
         android:onClick="takePicture"
         android:layout_below="@id/sample_text"
         android:layout_centerHorizontal="true"/>
+
+
+    <Button
+        android:id="@+id/button_main_goToTakePictureTEST"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/button_main_goToTakePictureTEST"
+        android:onClick="takePictureTest"
+        android:layout_below="@id/button_main_goToTakePicture"
+        android:layout_centerHorizontal="true"/>
 </RelativeLayout>
