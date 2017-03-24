@@ -17,22 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.PointF;
-import android.util.AttributeSet;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Created by jhansi on 28/03/15.
  */
@@ -45,7 +29,7 @@ public class PolygonView extends FrameLayout {
     private ImageView pointer3;
     private ImageView pointer4;
     private PolygonView polygonView;            // reference to this
-    public float circleDiameter;                 // diameter of each circle point
+    private float circleDiameter = 0;           // diameter of each circle point
 
     public PolygonView(Context context) {
         super(context);
@@ -71,7 +55,6 @@ public class PolygonView extends FrameLayout {
         pointer2 = getImageView(getWidth(), 0);
         pointer3 = getImageView(0, getHeight());
         pointer4 = getImageView(getWidth(), getHeight());
-        circleDiameter = pointer1.getWidth();
 
         addView(pointer1);
         addView(pointer2);
@@ -155,6 +138,8 @@ public class PolygonView extends FrameLayout {
         canvas.drawLine(pointer1.getX() + (pointer1.getWidth() / 2), pointer1.getY() + (pointer1.getHeight() / 2), pointer2.getX() + (pointer2.getWidth() / 2), pointer2.getY() + (pointer2.getHeight() / 2), paint);
         canvas.drawLine(pointer2.getX() + (pointer2.getWidth() / 2), pointer2.getY() + (pointer2.getHeight() / 2), pointer4.getX() + (pointer4.getWidth() / 2), pointer4.getY() + (pointer4.getHeight() / 2), paint);
         canvas.drawLine(pointer3.getX() + (pointer3.getWidth() / 2), pointer3.getY() + (pointer3.getHeight() / 2), pointer4.getX() + (pointer4.getWidth() / 2), pointer4.getY() + (pointer4.getHeight() / 2), paint);
+
+        circleDiameter = pointer1.getHeight();
     }
 
     private ImageView getImageView(int x, int y) {
@@ -294,6 +279,10 @@ public class PolygonView extends FrameLayout {
 
     }
 
+    public float getCircleDiameter() {
+        return circleDiameter;
+    }
+
     private void checkZoom(MotionEvent event, View view) {
         int eid = event.getAction();
 
@@ -313,5 +302,4 @@ public class PolygonView extends FrameLayout {
                 break;
         }
     }
-
 }

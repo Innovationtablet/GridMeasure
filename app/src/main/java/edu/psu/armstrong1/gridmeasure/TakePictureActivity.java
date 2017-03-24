@@ -41,6 +41,13 @@ public class TakePictureActivity extends AppCompatActivity {
     static final int MAGNIFIER_INDICATOR_SIZE = 5;              // number of pixels (square) to use as an indicator for magnifier
     static final int INDICATOR_COLOR = Color.rgb(255, 0, 0);    // color of the indicator for the magnifier
     static final String PHOTO_PATH = "curPhotoPath";            // key to savedInstanceBundle for picture location
+    static final String ROTATION_KEY = "curRotation";           // key to savedInstanceBundle for previousRotation
+    static final String WIDTH_DIF_KEY = "curWidthDif";          // key to savedInstanceBundle for imageWidthDif
+    static final String HEIGHT_DIF_KEY = "curHeightDif";        // key to savedInstanceBundle for imageHeightDif
+    static final String SCALE_FACTOR_KEY = "curScaleFactor";    // key to savedInstanceBundle for scaleFactor
+    static final String POINTS_KEY = "curPoints";               // key to savedInstanceBundle for PolygonView's points
+    static final String NEW_PICTURE_KEY = "curNewPicture";      // key to savedInstanceBundle for newPicture
+    static final String CIRCLE_DIAMETER_KEY = "curCircleDia";   // key to savedInstanceBundle for circleDiameter
     String mCurrentPhotoPath = null;                            // path to last picture taken
     Bitmap bitmap;                                              // the current picture
     Bitmap magnified;                                           // the magnified picture
@@ -48,11 +55,15 @@ public class TakePictureActivity extends AppCompatActivity {
     float zoomImageViewY = 0;                                   // y-coordinate for zoom location
     int zoomLocX, zoomLocY;                                     // x,y-coordinates for zoom location in bitmap
     int photoH, photoW;                                         // dimensions of the picture
-    float scaleFactor;                                          // scale factor of the picture to fit the image view
-    float imageWidthDif = 0;                                    // difference in width between the scaled picture and the image view
-    float imageHeightDif = 0;                                   // difference in height between the scaled picture and the image view
+    double scaleFactor, previousScaleFactor;                    // scale factor of the picture to fit the image view and the scale factor from before rotation
+    double imageWidthDif, prevImageWidthDif;                    // difference in width between the scaled picture and the image view
+    double imageHeightDif, prevImageHeightDif;                  // difference in height between the scaled picture and the image view
+    int previousRotation = -1;                                  // previous rotation value of image
     boolean zooming = false;                                    // whether or not to zoom
+    boolean newPicture = false;
     PolygonView polygonView;                                    // the PolygonView for the bounding box
+    Map<Integer, PointF> polygonPoints;                         // the points of the PolygonView
+    float circleDiameter;                                       // diameter of circles in PolygonView
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +103,18 @@ public class TakePictureActivity extends AppCompatActivity {
     public void onSaveInstanceState(Bundle savedInstanceState) {
         // Save the current photo path
         savedInstanceState.putString(PHOTO_PATH, mCurrentPhotoPath);
+
+        // Save details about bounding box and image to redraw bounding box
+        savedInstanceState.putInt(ROTATION_KEY, previousRotation);
+        savedInstanceState.putDouble(WIDTH_DIF_KEY, imageWidthDif);
+        savedInstanceState.putDouble(HEIGHT_DIF_KEY, imageHeightDif);
+        savedInstanceState.putDouble(SCALE_FACTOR_KEY, scaleFactor);
+        savedInstanceState.putBoolean(NEW_PICTURE_KEY, newPicture);
+        if (polygonView != null) {
+            savedInstanceState.putSerializable(POINTS_KEY, (HashMap) polygonView.getPoints());
+            savedInstanceState.putFloat(CIRCLE_DIAMETER_KEY, polygonView.getCircleDiameter());
+        }
+
         super.onSaveInstanceState(savedInstanceState);
     }
 
@@ -100,6 +123,17 @@ public class TakePictureActivity extends AppCompatActivity {
         // Restore state info and photo path
         super.onRestoreInstanceState(savedInstanceState);
         mCurrentPhotoPath = savedInstanceState.getString(PHOTO_PATH);
+
+        // Restore bounding box and image info to redraw bounding box
+        previousRotation = savedInstanceState.getInt(ROTATION_KEY);
+        prevImageWidthDif = savedInstanceState.getDouble(WIDTH_DIF_KEY);
+        prevImageHeightDif = savedInstanceState.getDouble(HEIGHT_DIF_KEY);
+        previousScaleFactor = savedInstanceState.getDouble(SCALE_FACTOR_KEY);
+        newPicture = savedInstanceState.getBoolean(NEW_PICTURE_KEY, false);
+        circleDiameter = savedInstanceState.getFloat(CIRCLE_DIAMETER_KEY, 0);
+        if (previousRotation != -1) {
+            polygonPoints = (Map<Integer, PointF>) savedInstanceState.getSerializable(POINTS_KEY);
+        }
     }
 
 
@@ -135,6 +169,7 @@ public class TakePictureActivity extends AppCompatActivity {
                 }
 
                 // Start activity to take picture and save it
+                previousRotation = -1;      // denotes that this is a new picture -> use default bounding box
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 ((Activity) view.getContext()).startActivity(takePictureIntent);
             }
@@ -167,7 +202,8 @@ public class TakePictureActivity extends AppCompatActivity {
     }
 
     private void setPic() {
-        float rotate;       // number of degrees to rotate picture
+        float rotate;                       // number of degrees to rotate picture
+        Map<Integer, PointF> pointf;        // points for the bounding box
 
         // Check if this is debugging mode
         if (DEBUGGING_MODE) {
@@ -202,7 +238,8 @@ public class TakePictureActivity extends AppCompatActivity {
         int targetH = imageView.getHeight();
 
         // Put the rotated and scaled picture in the view (rotate picture to dominant view)
-        bitmap = rotateBitmap(bitmap, rotateToDominant(rotate, photoH, photoW, targetH, targetW));
+        rotate = rotateToDominant(rotate, photoH, photoW, targetH, targetW);
+        bitmap = rotateBitmap(bitmap, rotate);
         imageView.setImageBitmap(bitmap);
 
         // Get updated picture dimensions after rotation
@@ -218,14 +255,14 @@ public class TakePictureActivity extends AppCompatActivity {
         }
 
         // Determine how much the image will be scaled down
-        scaleFactor = Math.min(((float) targetW) / photoW, ((float) targetH) / photoH);
+        scaleFactor = Math.min(((double) targetW) / photoW, ((double) targetH) / photoH);
 
         // Get the padding around the image
         imageWidthDif = (targetW - photoW * scaleFactor) / 2;
         imageHeightDif = (targetH - photoH * scaleFactor) / 2;
 
         Log.d("takePicture", "photoH = " + photoH + "; photoW = " + photoW + "; viewH = " + targetH + "; viewW = " + targetW);
-        Log.d("takePicture", "Width scale = " + ((float) photoW)/targetW + "; Height scale = " + ((float) photoH)/targetH + "; scale = " + scaleFactor);
+        Log.d("takePicture", "Width scale = " + ((double) photoW)/targetW + "; Height scale = " + ((double) photoH)/targetH + "; scale = " + scaleFactor);
         Log.d("takePicture", "imageWidthDif = " + imageWidthDif + "; imageHeightDif = " + imageHeightDif);
 
         // Add touch listener to add zooming
@@ -262,9 +299,67 @@ public class TakePictureActivity extends AppCompatActivity {
 
         // Add bounding box to image
         polygonView = (PolygonView) findViewById(R.id.polygonView);
-        Map<Integer, PointF> pointf = getOutlinePoints(imageView);
+
+        // Check if device was just rotated
+        if (previousRotation != -1)
+        {
+            // Device was rotated - redraw bounding box correctly
+            Log.d("takePicture", "New rotation = " + rotate + "; Previous rotation = " + previousRotation);
+
+            // Get the rotation mod 360 degrees (add 360 to avoid negative output)
+            int resultingRotation = (360 + (int) rotate - previousRotation) % 360;
+
+            // Convert the old points to new ones point-by-point
+            pointf = new HashMap<>();
+            for (Map.Entry<Integer, PointF> entry : polygonPoints.entrySet()) {
+                //  Step 1: Convert view coordinates to bitmap coordinates of old rotation
+                Point bitmapPt = convertViewPointToBitmapPoint(entry.getValue(), prevImageWidthDif, prevImageHeightDif, previousScaleFactor, true);
+                int newX, newY;
+
+                //  Step 2: Perform rotation on coordinates in bitmap coordinates
+                switch (resultingRotation) {
+                    case 90:
+                        newX = photoW - bitmapPt.y;
+                        newY = bitmapPt.x;
+                        break;
+                    case 180:
+                        newX = photoW - bitmapPt.x;
+                        newY = photoH - bitmapPt.y;
+                        break;
+                    case 270:
+                        newX = bitmapPt.y;
+                        newY = photoH - bitmapPt.x;
+                        break;
+                    default:
+                        // No net rotation
+                        newX = bitmapPt.x;
+                        newY = bitmapPt.y;
+                        break;
+                }
+
+                //  Step 3: Convert bitmap coordinates to view coordinates of new rotation
+                PointF viewPt = convertBitmapToViewPoint(newX, newY, imageWidthDif, imageHeightDif, scaleFactor, true);
+                pointf.put(entry.getKey(), viewPt);
+
+                Log.d("takePicture", "Bitmap: " + bitmapPt + " -> (" + newX + ", " + newY + ")");
+                Log.d("takePicture", "View: " + entry.getValue() + " -> " + viewPt);
+            }
+
+            Log.d("takePicture", "Resulting rotation = " + resultingRotation);
+            Log.d("takePicture", "Old points: " + polygonPoints);
+            Log.d("takePicture", "New points: " + pointf);
+
+        } else {
+            // First time seeing this image - draw default bounding box
+            pointf = getOutlinePoints(imageView);
+        }
+
+        // Set points and make bounding box visible
         polygonView.setPoints(pointf);
         polygonView.setVisibility(View.VISIBLE);
+
+        // Save rotation value in case device is rotated
+        previousRotation = (int) rotate;
 
         // Show Accept Outline button
         findViewById(R.id.button_AcceptOutline).setVisibility(View.VISIBLE);
@@ -333,8 +428,8 @@ public class TakePictureActivity extends AppCompatActivity {
         Log.d("TakePictureActivity", "Points: " + polygonView.getPoints());
         if (!bitmapCoords) {
             // Get location in bitmap for magnification
-            zoomLocX = convertViewToBitmapCoords(zoomPosX, true);
-            zoomLocY = convertViewToBitmapCoords(zoomPosY, false);
+            zoomLocX = convertViewToBitmapCoords(zoomPosX, imageWidthDif, scaleFactor);
+            zoomLocY = convertViewToBitmapCoords(zoomPosY, imageHeightDif, scaleFactor);
         } else {
             zoomLocX = (int) zoomPosX;
             zoomLocY = (int) zoomPosY;
@@ -415,60 +510,57 @@ public class TakePictureActivity extends AppCompatActivity {
         }
     }
 
-    private int convertViewToBitmapCoords(float viewCoord, boolean isXCoord) {
-        int bitmapCoord;
-
-        if (isXCoord) {
-            // x-coordinate - subtract width padding
-            bitmapCoord = (int) ((viewCoord - imageWidthDif) / scaleFactor);
-        } else {
-            // y-coordinate - subtract height padding
-            bitmapCoord = (int) ((viewCoord - imageHeightDif) / scaleFactor);
-        }
-
-        return bitmapCoord;
+    private int convertViewToBitmapCoords(double viewCoord, double imagePadding, double scale) {
+        return (int) ((viewCoord - imagePadding) / scale);
     }
 
-    private float convertBitmapToViewCoords(int bitmapCoord, boolean isXCoord) {
-        float viewCoord;
-
-        if (isXCoord) {
-            // x-coordinate - add width padding
-            viewCoord = (((float) bitmapCoord) * scaleFactor) + imageWidthDif;
-        } else {
-            // y-coordinate - add height padding
-            viewCoord = (((float) bitmapCoord) * scaleFactor) + imageHeightDif;
-        }
-
-        return viewCoord;
+    // Note: imagePadding is the width between the beginning of the image view and the beginning of the actual image
+    private float convertBitmapToViewCoords(int bitmapCoord, double imagePadding, double scale) {
+        return (float) ((bitmapCoord * scale) + imagePadding);
     }
 
     // Note: If adjustForPolygonViewCircles is true, the output will be the coordinates such that the
     //          center of the circle will be over the input coordinates
-    private PointF convertBitmapToViewPoint(int bitmapX, int bitmapY, boolean adjustForPolygonViewCircles) {
-        float xCoord = convertBitmapToViewCoords(bitmapX, true);
-        float yCoord = convertBitmapToViewCoords(bitmapY, false);
+    // Note: Padding values are the widths between the image view and the start of the actual image
+    private PointF convertBitmapToViewPoint(int bitmapX, int bitmapY, double imageWidthPadding,
+                                            double imageHeightPadding, double scale, boolean adjustForPolygonViewCircles) {
+        float xCoord = convertBitmapToViewCoords(bitmapX, imageWidthPadding, scale);
+        float yCoord = convertBitmapToViewCoords(bitmapY, imageHeightPadding, scale);
 
         if (adjustForPolygonViewCircles) {
-            xCoord -= polygonView.circleDiameter / 2;
-            yCoord -= polygonView.circleDiameter / 2;
+            xCoord -= circleDiameter / 2;
+            yCoord -= circleDiameter / 2;
         }
 
         return new PointF(xCoord, yCoord);
     }
 
+    // See convertBitmapToViewPoint for notes
+    private PointF convertBitmapPointToViewPoint(Point bitmapPt, double imageWidthPadding, double imageHeightPadding,
+                                                 double scale, boolean adjustForPolygonViewCircles) {
+        return convertBitmapToViewPoint(bitmapPt.x, bitmapPt.y, imageWidthPadding, imageHeightPadding, scale, adjustForPolygonViewCircles);
+    }
+
     // Note: If adjustForPolygonViewCircles is true, the input location is taken as the circle's location
     //          which is the top left of the circle, and the output will be the coordinates
     //          corresponding to the center of the circle
-    private Point convertViewToBitmapPoint(float viewX, float viewY, boolean adjustForPolygonViewCircles) {
+    // Note: Padding values are the widths between the image view and the start of the actual image
+    private Point convertViewToBitmapPoint(double viewX, double viewY, double imageWidthPadding,
+                                           double imageHeightPadding, double scale, boolean adjustForPolygonViewCircles) {
         if (adjustForPolygonViewCircles) {
-            viewX += polygonView.circleDiameter / 2;
-            viewY += polygonView.circleDiameter / 2;
+            viewX += circleDiameter / 2;
+            viewY += circleDiameter / 2;
         }
 
-        int xCoord = convertViewToBitmapCoords(viewX, true);
-        int yCoord = convertViewToBitmapCoords(viewY, false);
+        int xCoord = convertViewToBitmapCoords(viewX, imageWidthPadding, scale);
+        int yCoord = convertViewToBitmapCoords(viewY, imageHeightPadding, scale);
 
         return new Point(xCoord, yCoord);
+    }
+
+    // See convertViewToBitmapPoint for notes
+    private Point convertViewPointToBitmapPoint(PointF viewPt, double imageWidthPadding, double imageHeightPadding,
+                                                 double scale, boolean adjustForPolygonViewCircles) {
+        return convertViewToBitmapPoint(viewPt.x, viewPt.y, imageWidthPadding, imageHeightPadding, scale, adjustForPolygonViewCircles);
     }
 }
