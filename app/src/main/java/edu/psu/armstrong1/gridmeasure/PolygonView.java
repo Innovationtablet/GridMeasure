@@ -5,22 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.PointF;
-import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,12 +23,13 @@ import java.util.Map;
 public class PolygonView extends FrameLayout {
 
     protected Context context;
-    private Paint paint;
-    private ImageView pointer1;
+    private Paint paint;                        // Paint object describing how to draw lines
+    private ImageView pointer1;                 // the points of the bounding box
     private ImageView pointer2;
     private ImageView pointer3;
     private ImageView pointer4;
-    private PolygonView polygonView;
+    private PolygonView polygonView;            // reference to this
+    private float circleDiameter = 0;           // diameter of each circle point
 
     public PolygonView(Context context) {
         super(context);
@@ -152,6 +138,8 @@ public class PolygonView extends FrameLayout {
         canvas.drawLine(pointer1.getX() + (pointer1.getWidth() / 2), pointer1.getY() + (pointer1.getHeight() / 2), pointer2.getX() + (pointer2.getWidth() / 2), pointer2.getY() + (pointer2.getHeight() / 2), paint);
         canvas.drawLine(pointer2.getX() + (pointer2.getWidth() / 2), pointer2.getY() + (pointer2.getHeight() / 2), pointer4.getX() + (pointer4.getWidth() / 2), pointer4.getY() + (pointer4.getHeight() / 2), paint);
         canvas.drawLine(pointer3.getX() + (pointer3.getWidth() / 2), pointer3.getY() + (pointer3.getHeight() / 2), pointer4.getX() + (pointer4.getWidth() / 2), pointer4.getY() + (pointer4.getHeight() / 2), paint);
+
+        circleDiameter = pointer1.getHeight();
     }
 
     private ImageView getImageView(int x, int y) {
@@ -180,6 +168,7 @@ public class PolygonView extends FrameLayout {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
+            Log.d("PolygonView", "MidPointTouchListenerImpl event: " + event);
             int eid = event.getAction();
             switch (eid) {
                 case MotionEvent.ACTION_MOVE:
@@ -228,6 +217,10 @@ public class PolygonView extends FrameLayout {
                     break;
             }
             polygonView.invalidate();
+
+            // Check if zoom should be turned on
+            checkZoom(event, v);
+
             return true;
         }
     }
@@ -248,6 +241,7 @@ public class PolygonView extends FrameLayout {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
+            Log.d("PolygonView", "TouchListenerImpl event: " + event);
             int eid = event.getAction();
             switch (eid) {
                 case MotionEvent.ACTION_MOVE:
@@ -276,10 +270,36 @@ public class PolygonView extends FrameLayout {
                     break;
             }
             polygonView.invalidate();
+
+            // Check if zoom should be turned on
+            checkZoom(event, v);
+
             return true;
         }
 
     }
 
+    public float getCircleDiameter() {
+        return circleDiameter;
+    }
 
+    private void checkZoom(MotionEvent event, View view) {
+        int eid = event.getAction();
+
+        // Turn on zooming if screen is being touched, off otherwise
+        switch (eid) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_MOVE:
+                // Zoom in on center of circle
+                ((TakePictureActivity) context).zoomLocation(view.getX() + view.getWidth() / 2, view.getY() + view.getHeight() / 2, false);
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                ((TakePictureActivity) context).stopZooming();
+                break;
+
+            default:
+                break;
+        }
+    }
 }
