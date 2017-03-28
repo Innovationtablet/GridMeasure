@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/circlePopup_deleteCircle"
+        android:title="@string/takePicture_popupMenu_deletePoint"/>
+
+    <item
+        android:id="@+id/circlePopup_addCircle"
+        android:title="@string/takePicture_popupMenu_addPoint"/>
+
+    <item
+        android:id="@+id/circlePopup_cancel"
+        android:title="@string/takePicture_popupMenu_cancel"/>
+
+</menu>

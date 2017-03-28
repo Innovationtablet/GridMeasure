@@ -8,16 +8,16 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
-import android.graphics.PointF;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.media.ExifInterface;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -36,34 +36,49 @@ import java.util.List;
 import java.util.Map;
 
 public class TakePictureActivity extends AppCompatActivity {
+    // Constants and variables for debug mode
     static boolean DEBUGGING_MODE = false;                      // flag denoting whether or not to show the test image
+    boolean firstTimeShowingDebugImage = true;                  // flag indicating whether or not this is the first time showing debug image
+
+    // Constant for activity requests
+    static final int PICTURE_REQUEST = 1;                       // request code for taking a picture
+
+    // Constants for magnifier view
     static final int ZOOM_SIZE = 50;                            // number of pixels (square) to show for magnification
     static final int MAGNIFIER_INDICATOR_SIZE = 5;              // number of pixels (square) to use as an indicator for magnifier
     static final int INDICATOR_COLOR = Color.rgb(255, 0, 0);    // color of the indicator for the magnifier
+
+    // Constants for savedInstanceBundle lookups
     static final String PHOTO_PATH = "curPhotoPath";            // key to savedInstanceBundle for picture location
     static final String ROTATION_KEY = "curRotation";           // key to savedInstanceBundle for previousRotation
     static final String WIDTH_DIF_KEY = "curWidthDif";          // key to savedInstanceBundle for imageWidthDif
     static final String HEIGHT_DIF_KEY = "curHeightDif";        // key to savedInstanceBundle for imageHeightDif
     static final String SCALE_FACTOR_KEY = "curScaleFactor";    // key to savedInstanceBundle for scaleFactor
     static final String POINTS_KEY = "curPoints";               // key to savedInstanceBundle for PolygonView's points
-    static final String NEW_PICTURE_KEY = "curNewPicture";      // key to savedInstanceBundle for newPicture
     static final String CIRCLE_DIAMETER_KEY = "curCircleDia";   // key to savedInstanceBundle for circleDiameter
+
+    // Variables for showing a picture
     String mCurrentPhotoPath = null;                            // path to last picture taken
     Bitmap bitmap;                                              // the current picture
+    int photoH = 0, photoW = 0;                                 // dimensions of the picture
+    int previousRotation = -1;                                  // previous rotation value of image
+
+    // Variables for dealing with zooming
     Bitmap magnified;                                           // the magnified picture
-    float zoomImageViewX = 0;                                   // x-coordinate for zoom location
-    float zoomImageViewY = 0;                                   // y-coordinate for zoom location
-    int zoomLocX, zoomLocY;                                     // x,y-coordinates for zoom location in bitmap
-    int photoH, photoW;                                         // dimensions of the picture
     double scaleFactor, previousScaleFactor;                    // scale factor of the picture to fit the image view and the scale factor from before rotation
     double imageWidthDif, prevImageWidthDif;                    // difference in width between the scaled picture and the image view
     double imageHeightDif, prevImageHeightDif;                  // difference in height between the scaled picture and the image view
-    int previousRotation = -1;                                  // previous rotation value of image
-    boolean zooming = false;                                    // whether or not to zoom
-    boolean newPicture = false;
+    float zoomImageViewX = 0;                                   // x-coordinate for zoom location
+    float zoomImageViewY = 0;                                   // y-coordinate for zoom location
+    int zoomLocX, zoomLocY;                                     // x,y-coordinates for zoom location in bitmap
+    boolean zooming = false;                                    // flag indicating whether or not to zoom
+
+    // Variables for PolygonView interaction
     PolygonView polygonView;                                    // the PolygonView for the bounding box
     Map<Integer, PointF> polygonPoints;                         // the points of the PolygonView
     float circleDiameter;                                       // diameter of circles in PolygonView
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,9 +108,27 @@ public class TakePictureActivity extends AppCompatActivity {
     public void onWindowFocusChanged (boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
 
-        // Format picture if one is available (now that imageView has been created)
-        if ((mCurrentPhotoPath != null || DEBUGGING_MODE) && hasFocus) {
-            setPic();
+        // Check if in debugging mode or picture was just taken
+        if ((mCurrentPhotoPath != null || (DEBUGGING_MODE && firstTimeShowingDebugImage)) && hasFocus) {
+            // Make sure this function wasn't called due to PolygonView's popup menu
+            if (photoH == 0 && photoW == 0) {
+                // Format debug image (now that imageView has been created)
+                setPic();
+
+                // Don't call setPic again unless user takes a picture
+                firstTimeShowingDebugImage = false;
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Check which request we're responding to
+        if (requestCode == PICTURE_REQUEST && resultCode == RESULT_OK) {
+            // Format picture if one is available (now that imageView has been created)
+            if (mCurrentPhotoPath != null || DEBUGGING_MODE) {
+                setPic();
+            }
         }
     }
 
@@ -109,7 +142,6 @@ public class TakePictureActivity extends AppCompatActivity {
         savedInstanceState.putDouble(WIDTH_DIF_KEY, imageWidthDif);
         savedInstanceState.putDouble(HEIGHT_DIF_KEY, imageHeightDif);
         savedInstanceState.putDouble(SCALE_FACTOR_KEY, scaleFactor);
-        savedInstanceState.putBoolean(NEW_PICTURE_KEY, newPicture);
         if (polygonView != null) {
             savedInstanceState.putSerializable(POINTS_KEY, (HashMap) polygonView.getPoints());
             savedInstanceState.putFloat(CIRCLE_DIAMETER_KEY, polygonView.getCircleDiameter());
@@ -129,7 +161,6 @@ public class TakePictureActivity extends AppCompatActivity {
         prevImageWidthDif = savedInstanceState.getDouble(WIDTH_DIF_KEY);
         prevImageHeightDif = savedInstanceState.getDouble(HEIGHT_DIF_KEY);
         previousScaleFactor = savedInstanceState.getDouble(SCALE_FACTOR_KEY);
-        newPicture = savedInstanceState.getBoolean(NEW_PICTURE_KEY, false);
         circleDiameter = savedInstanceState.getFloat(CIRCLE_DIAMETER_KEY, 0);
         if (previousRotation != -1) {
             polygonPoints = (Map<Integer, PointF>) savedInstanceState.getSerializable(POINTS_KEY);
@@ -171,7 +202,7 @@ public class TakePictureActivity extends AppCompatActivity {
                 // Start activity to take picture and save it
                 previousRotation = -1;      // denotes that this is a new picture -> use default bounding box
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                ((Activity) view.getContext()).startActivity(takePictureIntent);
+                ((Activity) view.getContext()).startActivityForResult(takePictureIntent, PICTURE_REQUEST);
             }
         } else {
             // No camera to handle intent - alert user
@@ -203,7 +234,6 @@ public class TakePictureActivity extends AppCompatActivity {
 
     private void setPic() {
         float rotate;                       // number of degrees to rotate picture
-        Map<Integer, PointF> pointf;        // points for the bounding box
 
         // Check if this is debugging mode
         if (DEBUGGING_MODE) {
@@ -310,7 +340,7 @@ public class TakePictureActivity extends AppCompatActivity {
             int resultingRotation = (360 + (int) rotate - previousRotation) % 360;
 
             // Convert the old points to new ones point-by-point
-            pointf = new HashMap<>();
+            Map<Integer, PointF> pointf = new HashMap<>();
             for (Map.Entry<Integer, PointF> entry : polygonPoints.entrySet()) {
                 //  Step 1: Convert view coordinates to bitmap coordinates of old rotation
                 Point bitmapPt = convertViewPointToBitmapPoint(entry.getValue(), prevImageWidthDif, prevImageHeightDif, previousScaleFactor, true);
@@ -349,13 +379,16 @@ public class TakePictureActivity extends AppCompatActivity {
             Log.d("takePicture", "Old points: " + polygonPoints);
             Log.d("takePicture", "New points: " + pointf);
 
+            // Set the points
+            polygonView.setNumberOfPoints(pointf.size());
+            polygonView.setPoints(pointf);
         } else {
             // First time seeing this image - draw default bounding box
-            pointf = getOutlinePoints(imageView);
+            polygonView.setStartingPointsBox(new Point(imageView.getWidth() / 4, imageView.getHeight() / 4),
+                    new Point(3 * imageView.getWidth() / 4, 3* imageView.getHeight() / 4), PolygonView.STARTING_NUM_POINTS);
         }
 
-        // Set points and make bounding box visible
-        polygonView.setPoints(pointf);
+        // Make bounding box visible
         polygonView.setVisibility(View.VISIBLE);
 
         // Save rotation value in case device is rotated
@@ -363,17 +396,6 @@ public class TakePictureActivity extends AppCompatActivity {
 
         // Show Accept Outline button
         findViewById(R.id.button_AcceptOutline).setVisibility(View.VISIBLE);
-    }
-
-    private Map<Integer, PointF> getOutlinePoints(ImageView view) {
-        // Place beginning points in a rectangle around the center to take up about half the image view
-        Map<Integer, PointF> outlinePoints = new HashMap<>();
-        outlinePoints.put(0, new PointF(view.getWidth() / 4, view.getHeight() / 4));
-        outlinePoints.put(1, new PointF(3 * view.getWidth() / 4, view.getHeight() / 4));
-        outlinePoints.put(2, new PointF(view.getWidth() / 4, 3 * view.getHeight() / 4));
-        outlinePoints.put(3, new PointF(3 * view.getWidth() / 4, 3 * view.getHeight() / 4));
-        Log.d("TakePictureActivity", "Starting Points:" + outlinePoints);
-        return outlinePoints;
     }
 
     public static Bitmap rotateBitmap(Bitmap source, float angle)
