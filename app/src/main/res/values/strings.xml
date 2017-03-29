@@ -7,13 +7,26 @@
 
     <!--TakePictureActivity screen-->
     <string name="button_takePicture_camera">Take a picture</string>
-    <string name="button_takePicture_accept">Accept outling</string>
+    <string name="button_takePicture_accept">Accept outline</string>
     <string name="takePicture_imageView_description">Current Picture</string>
     <string name="takePicture_magnifyingGlass_description">Magnifying Glass</string>
 
 
+    <!--CalculationActivity screen-->
+    <string name="button_calculation_newJob">Start a new cut job</string>
+    <string name="button_calculation_sendToCutter">Send measurements to cutter</string>
+    <string name="calculation_loadingMessage">Calculating measurements...</string>
+
+
+    <!--TakePictureActivity Popup menu options-->
+    <string name="takePicture_popupMenu_deletePoint">Delete Point</string>
+    <string name="takePicture_popupMenu_addPoint">Add another Point</string>
+    <string name="takePicture_popupMenu_cancel">Cancel</string>
+
+
     <!--Warning/Error Messages-->
     <string name="warn_no_camera">No camera app was found.\nYou must have a camera app installed to use this app</string>
+    <string name="warn_4_points">You must keep at least 4 points</string>
     <string name="error_file_save">Error creating a file to save picture to.</string>
     <string name="error_picture_rotation">Error detecting orientation of picture.</string>
 </resources>

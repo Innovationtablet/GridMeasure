@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private void startPictureActivity(View view, boolean debugOn) {
         // Start TakePictureActivity
         Intent intent = new Intent(view.getContext(), TakePictureActivity.class);
-        intent.putExtra("DEBUG_FLAG", debugOn);
+        intent.putExtra(TakePictureActivity.DEBUG_INTENT_KEY, debugOn);
         view.getContext().startActivity(intent);
     }
 

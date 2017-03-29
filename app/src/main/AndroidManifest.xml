@@ -27,7 +27,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".TakePictureActivity"></activity>
+        <activity android:name=".TakePictureActivity" />
 
         <!-- File Provider for saving pictures -->
         <provider
@@ -40,6 +40,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <activity android:name=".CalculationActivity"></activity>
     </application>
 
 </manifest>
