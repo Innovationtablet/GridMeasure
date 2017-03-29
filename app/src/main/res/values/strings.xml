@@ -7,9 +7,15 @@
 
     <!--TakePictureActivity screen-->
     <string name="button_takePicture_camera">Take a picture</string>
-    <string name="button_takePicture_accept">Accept outling</string>
+    <string name="button_takePicture_accept">Accept outline</string>
     <string name="takePicture_imageView_description">Current Picture</string>
     <string name="takePicture_magnifyingGlass_description">Magnifying Glass</string>
+
+
+    <!--CalculationActivity screen-->
+    <string name="button_calculation_newJob">Start a new cut job</string>
+    <string name="button_calculation_sendToCutter">Send measurements to cutter</string>
+    <string name="calculation_loadingMessage">Calculating measurements...</string>
 
 
     <!--TakePictureActivity Popup menu options-->

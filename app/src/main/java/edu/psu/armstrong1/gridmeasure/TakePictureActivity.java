@@ -37,11 +37,14 @@ import java.util.Map;
 
 public class TakePictureActivity extends AppCompatActivity {
     // Constants and variables for debug mode
+    public static String DEBUG_INTENT_KEY = "DEBUG_MODE";       // key to Intent to get debug flag value
     static boolean DEBUGGING_MODE = false;                      // flag denoting whether or not to show the test image
     boolean firstTimeShowingDebugImage = true;                  // flag indicating whether or not this is the first time showing debug image
 
-    // Constant for activity requests
+    // Constant for activity requests/intents
     static final int PICTURE_REQUEST = 1;                       // request code for taking a picture
+    public static String PHOTO_PATH_INTENT_KEY = "PHOTO_PATH";  // key to Intent to get the picture's path
+    public static String POINTS_INTENT_KEY = "POINTS";          // key to Intent to get polygonView's points
 
     // Constants for magnifier view
     static final int ZOOM_SIZE = 50;                            // number of pixels (square) to show for magnification
@@ -58,10 +61,12 @@ public class TakePictureActivity extends AppCompatActivity {
     static final String CIRCLE_DIAMETER_KEY = "curCircleDia";   // key to savedInstanceBundle for circleDiameter
 
     // Variables for showing a picture
-    String mCurrentPhotoPath = null;                            // path to last picture taken
+    String currentPhotoPath = null;                             // path to last picture taken
     Bitmap bitmap;                                              // the current picture
     int photoH = 0, photoW = 0;                                 // dimensions of the picture
+    int targetH = 0, targetW = 0;                               // dimensions of the imageView
     int previousRotation = -1;                                  // previous rotation value of image
+    boolean newPic = false;                                     // flag denoting whether there is a new picture to load
 
     // Variables for dealing with zooming
     Bitmap magnified;                                           // the magnified picture
@@ -101,7 +106,8 @@ public class TakePictureActivity extends AppCompatActivity {
         }
 
         // Check for debug flag
-        DEBUGGING_MODE = getIntent().getBooleanExtra("DEBUG_FLAG", false);
+        DEBUGGING_MODE = getIntent().getBooleanExtra(DEBUG_INTENT_KEY, false);
+        newPic = DEBUGGING_MODE;
     }
 
     @Override
@@ -109,14 +115,18 @@ public class TakePictureActivity extends AppCompatActivity {
         super.onWindowFocusChanged(hasFocus);
 
         // Check if in debugging mode or picture was just taken
-        if ((mCurrentPhotoPath != null || (DEBUGGING_MODE && firstTimeShowingDebugImage)) && hasFocus) {
+        if ((currentPhotoPath != null || (DEBUGGING_MODE && firstTimeShowingDebugImage)) && hasFocus) {
+            // Get the view the picture will go in
+            ImageView imageView = (ImageView) findViewById(R.id.takePicture_imageView);
+
             // Make sure this function wasn't called due to PolygonView's popup menu
-            if (photoH == 0 && photoW == 0) {
+            if (targetH != imageView.getHeight() || targetW != imageView.getWidth() || newPic) {
                 // Format debug image (now that imageView has been created)
                 setPic();
 
                 // Don't call setPic again unless user takes a picture
                 firstTimeShowingDebugImage = false;
+                newPic = false;
             }
         }
     }
@@ -125,17 +135,15 @@ public class TakePictureActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Check which request we're responding to
         if (requestCode == PICTURE_REQUEST && resultCode == RESULT_OK) {
-            // Format picture if one is available (now that imageView has been created)
-            if (mCurrentPhotoPath != null || DEBUGGING_MODE) {
-                setPic();
-            }
+            // New picture was taken -> show it
+            newPic = true;
         }
     }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         // Save the current photo path
-        savedInstanceState.putString(PHOTO_PATH, mCurrentPhotoPath);
+        savedInstanceState.putString(PHOTO_PATH, currentPhotoPath);
 
         // Save details about bounding box and image to redraw bounding box
         savedInstanceState.putInt(ROTATION_KEY, previousRotation);
@@ -154,7 +162,7 @@ public class TakePictureActivity extends AppCompatActivity {
     public void onRestoreInstanceState(Bundle savedInstanceState) {
         // Restore state info and photo path
         super.onRestoreInstanceState(savedInstanceState);
-        mCurrentPhotoPath = savedInstanceState.getString(PHOTO_PATH);
+        currentPhotoPath = savedInstanceState.getString(PHOTO_PATH);
 
         // Restore bounding box and image info to redraw bounding box
         previousRotation = savedInstanceState.getInt(ROTATION_KEY);
@@ -212,7 +220,11 @@ public class TakePictureActivity extends AppCompatActivity {
 
     // Called when the user clicks the Accept Outline button
     public void dispatchCalculationIntent(View view) {
-        // stub function to be filled in
+        // Start CalculationActivity
+        Intent intent = new Intent(view.getContext(), CalculationActivity.class);
+        intent.putExtra(PHOTO_PATH_INTENT_KEY, currentPhotoPath);
+        intent.putExtra(POINTS_INTENT_KEY, (HashMap) polygonView.getPoints());
+        view.getContext().startActivity(intent);
     }
 
     private File createImageFile(View view) throws IOException {
@@ -228,7 +240,7 @@ public class TakePictureActivity extends AppCompatActivity {
         );
 
         // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = image.getAbsolutePath();
+        currentPhotoPath = image.getAbsolutePath();
         return image;
     }
 
@@ -241,12 +253,12 @@ public class TakePictureActivity extends AppCompatActivity {
             bitmap = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.test_img2);
             rotate = 90;
         } else {
-            // Load the bitmap (from picture at mCurrentPhotoPath)
-            bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath);
+            // Load the bitmap (from picture at currentPhotoPath)
+            bitmap = BitmapFactory.decodeFile(currentPhotoPath);
 
             // Try to get the image's rotation
             try {
-                ExifInterface exif = new ExifInterface(mCurrentPhotoPath);
+                ExifInterface exif = new ExifInterface(currentPhotoPath);
                 int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
                 rotate = exifToDegrees(rotation);
             } catch (IOException e) {
@@ -264,8 +276,8 @@ public class TakePictureActivity extends AppCompatActivity {
         ImageView imageView = (ImageView) findViewById(R.id.takePicture_imageView);
 
         // Get the dimensions of the View
-        int targetW = imageView.getWidth();
-        int targetH = imageView.getHeight();
+        targetW = imageView.getWidth();
+        targetH = imageView.getHeight();
 
         // Put the rotated and scaled picture in the view (rotate picture to dominant view)
         rotate = rotateToDominant(rotate, photoH, photoW, targetH, targetW);
