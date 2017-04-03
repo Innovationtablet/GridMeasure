@@ -26,7 +26,7 @@
 
     <!--Warning/Error Messages-->
     <string name="warn_no_camera">No camera app was found.\nYou must have a camera app installed to use this app</string>
-    <string name="warn_4_points">You must keep at least 4 points</string>
+    <string name="warn_3_points">You must keep at least 3 points</string>
     <string name="error_file_save">Error creating a file to save picture to.</string>
     <string name="error_picture_rotation">Error detecting orientation of picture.</string>
 </resources>
