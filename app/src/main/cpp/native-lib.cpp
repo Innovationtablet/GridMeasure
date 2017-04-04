@@ -42,6 +42,6 @@ Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_stringFromJNI(
 
     }
 
-    std::string hello = "" + board->getChessboardSize().width;
+    std::string hello = "hello";
     return env->NewStringUTF(hello.c_str());
 }
