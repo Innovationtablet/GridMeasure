@@ -2,20 +2,30 @@ package edu.psu.armstrong1.gridmeasure;
 
 import android.graphics.Bitmap;
 import android.graphics.PointF;
+import android.util.Log;
 
 import org.opencv.android.Utils;
+import org.opencv.aruco.Aruco;
+import org.opencv.aruco.CharucoBoard;
+import org.opencv.aruco.Dictionary;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by hfs50 on 3/20/2017.
  */
 
 class GridDetectionUtils {
+
+    private static final String TAG = "GridDetectionUtils";
+
+    public static native String stringFromJNI(long inMatAddr, long outMatAddr);
 
     /**
      *
@@ -59,5 +69,73 @@ class GridDetectionUtils {
 
         return bmp;
         //return new ArrayList<>();
+    }
+
+    static Bitmap findCharuco(Bitmap in) {
+        Mat inMat;
+
+        inMat = new Mat();
+        Utils.bitmapToMat(in, inMat);
+
+        Mat outMat = new Mat();
+        stringFromJNI(inMat.getNativeObjAddr(), outMat.getNativeObjAddr());
+        Bitmap bmp = Bitmap.createBitmap(outMat.width(), outMat.height(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(outMat, bmp);
+
+        return bmp;
+
+/*
+        Mat inMat;
+
+        inMat = new Mat();
+        Utils.bitmapToMat(in, inMat);
+
+        Imgproc.cvtColor(inMat, inMat, Imgproc.COLOR_RGB2GRAY);
+
+        Imgproc.resize(inMat, inMat, new Size(0,0), .1f, .1f, Imgproc.INTER_NEAREST);
+
+        // this is all from https://github.com/opencv/opencv_contrib/blob/3.1.0/modules/aruco/tutorials/charuco_detection/charuco_detection.markdown
+        //cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+        //cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
+
+        int squaresX = 5;
+        int squaresY = 7;
+        int squareLength = 100;
+        int markerLength = 50;
+        int margins = squareLength - markerLength;
+
+        int borderBits = 1;
+
+        Dictionary dict = Aruco.getPredefinedDictionary(Aruco.DICT_7X7_1000);
+
+        Size imageSize = new Size(squaresX * squareLength + 2 * margins, squaresY * squareLength + 2 * margins);
+
+        CharucoBoard board = CharucoBoard.create(squaresX, squaresY, (float)squareLength,
+                (float)markerLength, dict);
+
+        // show created board
+        //Mat boardImage = new Mat();
+        //board.draw(imageSize, boardImage, margins, borderBits);
+
+        //Bitmap bmp = Bitmap.createBitmap(boardImage.width(), boardImage.height(), Bitmap.Config.ARGB_8888);
+        //Utils.matToBitmap(boardImage, bmp);
+
+        ArrayList<Mat> markerCorners = new ArrayList<>();
+        Mat markerIds = new Mat();
+        Aruco.detectMarkers(inMat,dict,markerCorners,markerIds);
+
+        if(markerIds.rows() > 0) {
+            Mat charucoCorners = new Mat();
+            Mat charucoIds = new Mat();
+            Aruco.interpolateCornersCharuco(markerCorners, markerIds, inMat, board, charucoCorners, charucoIds);
+
+            //draw
+            Aruco.drawDetectedCornersCharuco(inMat, charucoCorners);
+        }
+
+        Bitmap bmp = Bitmap.createBitmap(inMat.width(), inMat.height(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(inMat, bmp);
+
+        return bmp;*/
     }
 }

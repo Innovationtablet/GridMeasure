@@ -284,6 +284,9 @@ public class TakePictureActivity extends AppCompatActivity {
         bitmap = rotateBitmap(bitmap, rotate);
         imageView.setImageBitmap(bitmap);
 
+        // testing gus's code
+        imageView.setImageBitmap(GridDetectionUtils.findCharuco(bitmap));
+
         // Get updated picture dimensions after rotation
         photoW = bitmap.getWidth();
         photoH = bitmap.getHeight();
