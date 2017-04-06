@@ -57,6 +57,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
     }
 
+
+    // Called when the user clicks the test bluetooth button
+    public void testBluetooth(View view) {
+        // Start BluetoothActivity
+        Intent intent = new Intent(view.getContext(), BluetoothActivity.class);
+        view.getContext().startActivity(intent);
+    }
+
     // Called when the user clicks the take picture button
     public void takePicture(View view) {
         // Start TakePictureActivity without debug on
