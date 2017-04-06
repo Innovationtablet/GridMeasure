@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -86,6 +87,7 @@ public class BluetoothActivity extends AppCompatActivity {
             // No bluetooth available
             Toast.makeText(getApplicationContext(), R.string.error_noBluetooth, Toast.LENGTH_LONG).show();
             ((Button) findViewById(R.id.button_bluetooth_sendData)).setClickable(false);
+            ((ImageButton) findViewById(R.id.button_bluetooth_updateBluetooth)).setClickable(false);
         }
     }
 
@@ -115,7 +117,7 @@ public class BluetoothActivity extends AppCompatActivity {
             dataTransferThread.cancel();
         }
 
-        if (devicesFound.size() > 0) {
+        if (devicesFound != null && devicesFound.size() > 0) {
             bluetoothDevice = pairedDevices.get(spinner.getSelectedItemPosition());
         }
 

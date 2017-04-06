@@ -9,3 +9,5 @@
 .externalNativeBuild
 openCVLibrary320/build/
 */build/
+/bluetoothServer/*
+!/bluetoothServer/server.py

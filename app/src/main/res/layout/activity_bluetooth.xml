@@ -31,6 +31,7 @@
             android:layout_weight="1" />
 
         <ImageButton
+            android:id="@+id/button_bluetooth_updateBluetooth"
             android:layout_width="@dimen/abc_action_button_min_width_material"
             android:layout_height="@dimen/abc_action_button_min_height_material"
             android:contentDescription="@string/bluetooth_refreshDescriptor"
