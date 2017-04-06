@@ -395,7 +395,7 @@ public class TakePictureActivity extends AppCompatActivity {
             Log.d("takePicture", "New points: " + pointf);
 
             // Set the points
-            polygonView.setNumberOfPoints(pointf.size());
+            polygonView.setNumberOfPoints(pointf.size(), false);
             polygonView.setPoints(pointf);
         } else {
             // First time seeing this image - draw default bounding box

@@ -28,6 +28,7 @@ import java.util.Map;
  */
 public class PolygonView extends FrameLayout {
     public static final int STARTING_NUM_POINTS = 4;    // Number of points to start with
+    public static final int MINIMUM_NUM_POINTS = 3;     // Minimum number of points shape must have
 
     protected Context context;
     private Paint paint;                                // Paint object describing how to draw lines
@@ -78,11 +79,21 @@ public class PolygonView extends FrameLayout {
         paint.setAntiAlias(true);
     }
 
-    public void setNumberOfPoints(int numberOfPoints) {
-        setStartingPointsBox(new Point(0,0), new Point(this.getWidth(), this.getHeight()), numberOfPoints);
+    // If initializeStartingPositions is false, all points will be at (0,0)
+    // Else, if initializeStartingPositions is true, points are arranged in a rectangle on the boundary of PolygonView
+    public void setNumberOfPoints(int numberOfPoints, boolean initializeStartingPositions) {
+        if (numberOfPoints >= MINIMUM_NUM_POINTS) {
+            if (initializeStartingPositions) {
+                setStartingPointsBox(new Point(0, 0), new Point(this.getWidth(), this.getHeight()), numberOfPoints);
+            } else {
+                initializePoints(numberOfPoints);
+            }
+        } else {
+            Log.d("PolygonView", "setNumberOfPoints failed. Not enough points (" + numberOfPoints + ")");
+        }
     }
 
-    public void setStartingPointsBox(Point topLeft, Point bottomRight, int numberOfPoints) {
+    private void initializePoints(int numberOfPoints) {
         // Remove old pointers if applicable
         if (pointers != null) {
             for (ImageView point : pointers) {
@@ -93,8 +104,33 @@ public class PolygonView extends FrameLayout {
         // Initialize pointers
         pointers = new ArrayList<ImageView>(numberOfPoints);
 
+        // Initialize each point to (0,0)
+        for (int i = 0; i < numberOfPoints; i++) {
+            ImageView v = getImageView(0,0);
+            pointers.add(v);
+            addView(v);
+        }
+    }
+
+    public void setStartingPointsBox(Point topLeft, Point bottomRight, int numberOfPoints) {
+        int index = 0;
+
+        if (numberOfPoints < MINIMUM_NUM_POINTS) {
+            Log.d("PolygonView", "setStartingPointsBox failed. Not enough points (" + numberOfPoints + ")");
+            return;
+        }
+
+        // Initialize the points
+        initializePoints(numberOfPoints);
+
         // Add points evenly around the border in a square
         int pointsToDistrib = numberOfPoints - 4;
+
+        if (numberOfPoints == MINIMUM_NUM_POINTS) {
+            // Only using 3 points -> pointsToDistrib should be 0 (not -1)
+            pointsToDistrib = 0;
+        }
+
         int pointsPerSide[] = new int[4];
         int leftOverPoints = pointsToDistrib % 4;
         int boxWidth = bottomRight.x - topLeft.x;
@@ -104,39 +140,56 @@ public class PolygonView extends FrameLayout {
         Arrays.fill(pointsPerSide, 0, leftOverPoints, (int) ((pointsToDistrib / 4) + 1));
         Arrays.fill(pointsPerSide, leftOverPoints, 4, (int) (pointsToDistrib / 4));
 
-        // Add points to the corners
-        pointers.add(getImageView(topLeft.x, topLeft.y));
-        pointers.add(getImageView(bottomRight.x, topLeft.y));
-        pointers.add(getImageView(bottomRight.x, bottomRight.y));
-        pointers.add(getImageView(topLeft.x, bottomRight.y));
+        // Add point to the top left corner
+        setPointerToLocation(index, topLeft.x, topLeft.y);
 
         // Add points along top side
         for (int i = 1; i <= pointsPerSide[0]; i++) {
-            pointers.add(getImageView(topLeft.x + i * boxWidth / (pointsPerSide[0] + 1), topLeft.y));
+            setPointerToLocation(index + i, topLeft.x + i * boxWidth / (pointsPerSide[0] + 1), topLeft.y);
         }
+
+        // Update index
+        index += pointsPerSide[0] + 1;
+
+        // Add point to the top right corner
+        setPointerToLocation(index, bottomRight.x, topLeft.y);
 
         // Add points along right side
         for (int i = 1; i <= pointsPerSide[1]; i++) {
-            pointers.add(getImageView(bottomRight.x, topLeft.y + i * boxHeight / (pointsPerSide[1] + 1)));
+            setPointerToLocation(index + i, bottomRight.x, topLeft.y + i * boxHeight / (pointsPerSide[1] + 1));
         }
+
+        // Update index
+        index += pointsPerSide[1] + 1;
+
+        // Add point to the bottom right corner
+        setPointerToLocation(index, bottomRight.x, bottomRight.y);
 
         // Add points along bottom side
         for (int i = 1; i <= pointsPerSide[2]; i++) {
-            pointers.add(getImageView(topLeft.x + i * boxWidth / (pointsPerSide[2] + 1), bottomRight.y));
+            setPointerToLocation(index + i, bottomRight.x - i * boxWidth / (pointsPerSide[2] + 1), bottomRight.y);
+        }
+
+        // Update index
+        index += pointsPerSide[2] + 1;
+
+        // If there are only 3 points, don't put a 4th
+        if (numberOfPoints > MINIMUM_NUM_POINTS) {
+            // Add point to the bottom left corner
+            setPointerToLocation(index, topLeft.x, bottomRight.y);
         }
 
         // Add points along left side
         for (int i = 1; i <= pointsPerSide[3]; i++) {
-            pointers.add(getImageView(topLeft.x, topLeft.y + i * boxHeight / (pointsPerSide[3] + 1)));
+            setPointerToLocation(index + i, topLeft.x, bottomRight.y - i * boxHeight / (pointsPerSide[3] + 1));
         }
+    }
 
-        // Sort the points in CCW order
-        sortPoints();
-
-        // Add points to the view
-        for (ImageView view : pointers) {
-            addView(view);
-        }
+    private void setPointerToLocation(int index, float x, float y) {
+        // Set the point at index to the location in point
+        ImageView v = pointers.get(index);
+        v.setX(x);
+        v.setY(y);
     }
 
     public Map<Integer, PointF> getPoints() {
@@ -149,21 +202,8 @@ public class PolygonView extends FrameLayout {
         return points;
     }
 
-    public Map<Integer, PointF> getOrderedPoints() {
-        // Sort the points in CCW order
-        sortPoints();
-
-        // Put points in a map so that keys 0 - size are in CCW order
-        Map<Integer, PointF> orderedPoints = new HashMap<>();
-        for (int i = 0; i < pointers.size(); i++) {
-            orderedPoints.put(i, new PointF(pointers.get(i).getX(), pointers.get(i).getY()));
-        }
-
-        return orderedPoints;
-    }
-
     public void setPoints(Map<Integer, PointF> pointFMap) {
-        if (pointFMap.size() >= 4) {
+        if (isValidShape(pointFMap)) {
             setPointsCoordinates(pointFMap);
         }
     }
@@ -174,8 +214,7 @@ public class PolygonView extends FrameLayout {
         // Set the points to the locations in pointFMap
         // Note: This will set as many points as possible (if pointFMap.size != pointers.size)
         while (i < pointers.size() && i < pointFMap.size()) {
-            pointers.get(i).setX(pointFMap.get(i).x);
-            pointers.get(i).setY(pointFMap.get(i).y);
+            setPointerToLocation(i, pointFMap.get(i).x, pointFMap.get(i).y);
             i++;
         }
     }
@@ -219,7 +258,7 @@ public class PolygonView extends FrameLayout {
     }
 
     public boolean isValidShape(Map<Integer, PointF> pointFMap) {
-        return pointFMap.size() >= 4;
+        return pointFMap.size() >= MINIMUM_NUM_POINTS;
     }
 
     private class TouchListenerImpl implements OnTouchListener {
@@ -360,12 +399,12 @@ public class PolygonView extends FrameLayout {
     }
 
     private boolean isOkToRemovePoint(boolean showWarning) {
-        // Always have at least 4 points
-        if (pointers.size() > 4) {
+        // Always have at least 3 points
+        if (pointers.size() > MINIMUM_NUM_POINTS) {
             return true;
         } else {
             if (showWarning) {
-                Toast.makeText(context, R.string.warn_4_points, Toast.LENGTH_LONG).show();
+                Toast.makeText(context, R.string.warn_3_points, Toast.LENGTH_LONG).show();
             }
             return false;
         }
@@ -393,46 +432,6 @@ public class PolygonView extends FrameLayout {
             centerPoint.x += point.getX() / size;
             centerPoint.y += point.getY() / size;
         }
-    }
-
-    private void sortPoints() {
-        // Get the center point
-        calculateCenterPoint();
-
-        // Sort points counter-clockwise around center point
-        // Note: if points are on the same line radiating from center point, farther one is first
-        Collections.sort(pointers, new Comparator<ImageView>() {
-            public int compare(ImageView p1, ImageView p2) {
-                PointF a = new PointF(p1.getX(), p1.getY());
-                PointF b = new PointF(p2.getX(), p2.getY());
-
-                // Check if points are in different quadrants wrt the center point
-                if (a.x - centerPoint.x >= 0 && b.x - centerPoint.x < 0) {
-                    return 1;
-                } else if (a.x - centerPoint.x < 0 && b.x - centerPoint.x >= 0) {
-                    return -1;
-                } else if (a.x - centerPoint.x == 0 && b.x - centerPoint.x == 0) {
-                    if (a.y - centerPoint.y >= 0 || b.y - centerPoint.y >= 0) {
-                        return (int) (a.y - b.y);
-                    }
-                    return (int) (b.y - a.y);
-                }
-
-                // Compute the cross product of vectors (center -> a) x (center -> b)
-                float det = (a.x - centerPoint.x) * (b.y - centerPoint.y) - (b.x - centerPoint.x) * (a.y - centerPoint.y);
-                if (det < 0) {
-                    return 1;
-                } else if (det > 0) {
-                    return -1;
-                }
-
-                // Points a and b are on the same line from the center
-                // Check which point is closer to the center
-                float d1 = (a.x - centerPoint.x) * (a.x - centerPoint.x) + (a.y - centerPoint.y) * (a.y - centerPoint.y);
-                float d2 = (b.x - centerPoint.x) * (b.x - centerPoint.x) + (b.y - centerPoint.y) * (b.y - centerPoint.y);
-                return (int) (d1 - d2);
-            }
-        });
     }
 
     private void checkZoom(MotionEvent event, View view) {
