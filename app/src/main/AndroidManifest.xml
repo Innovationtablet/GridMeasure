@@ -6,7 +6,8 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="18" /> <!-- Used for storing pictures in private location -->
-
+    <uses-permission android:name="android.permission.BLUETOOTH" /> <!-- Used for sending data over bluetooth -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
     <!-- Features -->
     <uses-feature
@@ -40,7 +41,8 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <activity android:name=".CalculationActivity"></activity>
+        <activity android:name=".CalculationActivity" />
+        <activity android:name=".BluetoothActivity"></activity>
     </application>
 
 </manifest>
