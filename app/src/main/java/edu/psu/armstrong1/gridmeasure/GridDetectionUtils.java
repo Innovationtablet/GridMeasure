@@ -27,6 +27,40 @@ class GridDetectionUtils {
 
     public static native String stringFromJNI(long inMatAddr, long outMatAddr);
 
+    private static native void calibrateWithCharucoNative(String[] imageFilepaths);
+    private static native void calibrateWithCharucoMatsNative(Mat[] images);
+    private static native float[] measurementsFromOutlineNative(Mat image, float[] points);
+
+    /**
+     *  Wrapper for native call.
+     */
+    public static void  calibrateWithCharuco(String[] imageFilepaths) {
+        calibrateWithCharucoNative(imageFilepaths);
+    }
+
+    public static void calibrateWithCharuco(Mat[] images) {
+        calibrateWithCharucoMatsNative(images);
+    }
+
+    /**
+     *  Wrapper for native call.
+     */
+    public static List<PointF> measurementsFromOutline(Mat image, List<PointF> points) {
+        float[] pointsArr = new float[points.size()*2];
+        for (int i = 0; i < points.size(); i++) {
+            pointsArr[i*2] = points.get(i).x;
+            pointsArr[i*2+1] =  points.get(i).y;
+        }
+
+        float[] worldPointsArr = measurementsFromOutlineNative(image, pointsArr);
+
+        ArrayList<PointF> out = new ArrayList<>();
+        for (int i = 0; i < worldPointsArr.length; i += 2) {
+            out.add(new PointF(worldPointsArr[i], worldPointsArr[i+1]));
+        }
+        return out;
+    }
+
     /**
      *
      * @param in
