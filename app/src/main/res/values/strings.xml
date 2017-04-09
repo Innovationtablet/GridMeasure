@@ -8,6 +8,7 @@
     <!--TakePictureActivity screen-->
     <string name="button_takePicture_camera">Take a picture</string>
     <string name="button_takePicture_accept">Accept outline</string>
+    <string name="button_takePicture_transform">Transform shape</string>
     <string name="takePicture_imageView_description">Current Picture</string>
     <string name="takePicture_magnifyingGlass_description">Magnifying Glass</string>
 
@@ -42,4 +43,6 @@
     <string name="error_file_save">Error creating a file to save picture to</string>
     <string name="error_picture_rotation">Error detecting orientation of picture</string>
     <string name="error_noBluetooth">Bluetooth not available on this device</string>
+    <string name="error_noAcceptableCornerFound">The shape you outlined has no acceptable bottom left corner</string>
+    <string name="error_noAcceptableTransformation">The shape you outlined could not be rotated successfully</string>
 </resources>

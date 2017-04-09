@@ -18,8 +18,6 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -193,10 +191,18 @@ public class PolygonView extends FrameLayout {
     }
 
     public Map<Integer, PointF> getPoints() {
-
         Map<Integer, PointF> points = new HashMap<>();
         for (int i = 0; i < pointers.size(); i++) {
             points.put(i, new PointF(pointers.get(i).getX(), pointers.get(i).getY()));
+        }
+
+        return points;
+    }
+
+    public ArrayList<PointF> getPointsArray() {
+        ArrayList<PointF> points = new ArrayList<>();
+        for (int i = 0; i < pointers.size(); i++) {
+            points.add(new PointF(pointers.get(i).getX(), pointers.get(i).getY()));
         }
 
         return points;
@@ -250,6 +256,22 @@ public class PolygonView extends FrameLayout {
         imageView.setOnLongClickListener(new LongPressListenerImpl());
         imageView.setOnTouchListener(new TouchListenerImpl());
         return imageView;
+    }
+
+    public void removeAllColorFilters() {
+        for (ImageView v: pointers) {
+            v.clearColorFilter();
+        }
+    }
+
+    public void darkenPointer(int index) {
+        pointers.get(index).setColorFilter(R.color.orange);
+    }
+
+    public void darkenPointers(ArrayList<Integer> indices) {
+        for (int index: indices) {
+            darkenPointer(index);
+        }
     }
 
     @Override
