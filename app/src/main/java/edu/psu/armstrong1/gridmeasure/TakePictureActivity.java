@@ -30,6 +30,7 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -227,6 +228,34 @@ public class TakePictureActivity extends AppCompatActivity {
         view.getContext().startActivity(intent);
     }
 
+
+    // Called when the user clicks the Transform button
+    public void detectCornersAndTransform(View view) {
+        // Get rid of all previous color filters
+        polygonView.removeAllColorFilters();
+
+        // Get the points
+        ArrayList<PointF> points = polygonView.getPointsArray();
+
+        // Transform the points
+        CalculationActivity calc = new CalculationActivity(getApplicationContext());
+        ArrayList<PointF> newPoints = calc.findCornerAndTransformPoints(points, false);
+
+        // If transformation successful, show the new points
+        if (newPoints != null) {
+            // Turn the points into a map
+            HashMap<Integer, PointF> newPointMap = new HashMap<>();
+            for (PointF p : newPoints) {
+                // Make sure the (0,0) point starts on the actual image
+                newPointMap.put(newPoints.indexOf(p), new PointF(p.x + (float) imageWidthDif, p.y + (float) imageHeightDif));
+            }
+
+            // Set the points
+            polygonView.setPoints(newPointMap);
+            polygonView.invalidate();
+        }
+    }
+
     private File createImageFile(View view) throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -410,7 +439,12 @@ public class TakePictureActivity extends AppCompatActivity {
         previousRotation = (int) rotate;
 
         // Show Accept Outline button
-        findViewById(R.id.button_AcceptOutline).setVisibility(View.VISIBLE);
+        findViewById(R.id.button_acceptOutline).setVisibility(View.VISIBLE);
+
+        // Only show the transform button in debugging mode
+        if (DEBUGGING_MODE) {
+            findViewById(R.id.button_transform).setVisibility(View.VISIBLE);
+        }
     }
 
     public static Bitmap rotateBitmap(Bitmap source, float angle)
