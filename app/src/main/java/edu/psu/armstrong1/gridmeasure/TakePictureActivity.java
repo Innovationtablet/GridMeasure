@@ -417,10 +417,10 @@ public class TakePictureActivity extends AppCompatActivity {
             Map<Integer, PointF> pointf = new HashMap<>();
             for (Map.Entry<Integer, PointF> entry : polygonPoints.entrySet()) {
                 //  Step 1: Convert view coordinates to bitmap coordinates of old rotation
-                Point bitmapPt = convertViewPointToBitmapPoint(entry.getValue(), prevImageWidthDif, prevImageHeightDif, previousScaleFactor, true);
+                PointF bitmapPt = convertViewPointToBitmapPoint(entry.getValue(), prevImageWidthDif, prevImageHeightDif, previousScaleFactor, true);
 
                 //  Step 2: Perform rotation on coordinates in bitmap coordinates
-                Point rotatedPt = rotatePoint(bitmapPt, resultingRotation, photoH, photoW);
+                PointF rotatedPt = rotatePoint(bitmapPt, resultingRotation, photoH, photoW);
 
                 //  Step 3: Convert bitmap coordinates to view coordinates of new rotation
                 PointF viewPt = convertBitmapPointToViewPoint(rotatedPt, imageWidthDif, imageHeightDif, scaleFactor, true);
@@ -467,8 +467,8 @@ public class TakePictureActivity extends AppCompatActivity {
     }
 
     // Note height and width are the new height and width (after rotation)
-    private static Point rotatePoint(Point point, int resultingRotation, int height, int width) {
-        int newX, newY;
+    private static PointF rotatePoint(PointF point, int resultingRotation, int height, int width) {
+        float newX, newY;
 
         switch (resultingRotation) {
             case 90:
@@ -490,7 +490,7 @@ public class TakePictureActivity extends AppCompatActivity {
                 break;
         }
 
-        return new Point(newX, newY);
+        return new PointF(newX, newY);
     }
 
     private static float exifToDegrees(int exifOrientation) {
@@ -624,14 +624,14 @@ public class TakePictureActivity extends AppCompatActivity {
     }
 
     // Note: imagePadding is the width between the beginning of the image view and the beginning of the actual image
-    private float convertBitmapToViewCoords(int bitmapCoord, double imagePadding, double scale) {
+    private float convertBitmapToViewCoords(float bitmapCoord, double imagePadding, double scale) {
         return (float) ((bitmapCoord * scale) + imagePadding);
     }
 
     // Note: If adjustForPolygonViewCircles is true, the output will be the coordinates such that the
     //          center of the circle will be over the input coordinates
     // Note: Padding values are the widths between the image view and the start of the actual image
-    private PointF convertBitmapToViewPoint(int bitmapX, int bitmapY, double imageWidthPadding,
+    private PointF convertBitmapToViewPoint(float bitmapX, float bitmapY, double imageWidthPadding,
                                             double imageHeightPadding, double scale, boolean adjustForPolygonViewCircles) {
         float xCoord = convertBitmapToViewCoords(bitmapX, imageWidthPadding, scale);
         float yCoord = convertBitmapToViewCoords(bitmapY, imageHeightPadding, scale);
@@ -645,7 +645,7 @@ public class TakePictureActivity extends AppCompatActivity {
     }
 
     // See convertBitmapToViewPoint for notes
-    private PointF convertBitmapPointToViewPoint(Point bitmapPt, double imageWidthPadding, double imageHeightPadding,
+    private PointF convertBitmapPointToViewPoint(PointF bitmapPt, double imageWidthPadding, double imageHeightPadding,
                                                  double scale, boolean adjustForPolygonViewCircles) {
         return convertBitmapToViewPoint(bitmapPt.x, bitmapPt.y, imageWidthPadding, imageHeightPadding, scale, adjustForPolygonViewCircles);
     }
@@ -654,21 +654,21 @@ public class TakePictureActivity extends AppCompatActivity {
     //          which is the top left of the circle, and the output will be the coordinates
     //          corresponding to the center of the circle
     // Note: Padding values are the widths between the image view and the start of the actual image
-    private Point convertViewToBitmapPoint(double viewX, double viewY, double imageWidthPadding,
+    private PointF convertViewToBitmapPoint(double viewX, double viewY, double imageWidthPadding,
                                            double imageHeightPadding, double scale, boolean adjustForPolygonViewCircles) {
         if (adjustForPolygonViewCircles) {
             viewX += circleDiameter / 2;
             viewY += circleDiameter / 2;
         }
 
-        int xCoord = convertViewToBitmapCoords(viewX, imageWidthPadding, scale);
-        int yCoord = convertViewToBitmapCoords(viewY, imageHeightPadding, scale);
+        float xCoord = convertViewToBitmapCoords(viewX, imageWidthPadding, scale);
+        float yCoord = convertViewToBitmapCoords(viewY, imageHeightPadding, scale);
 
-        return new Point(xCoord, yCoord);
+        return new PointF(xCoord, yCoord);
     }
 
     // See convertViewToBitmapPoint for notes
-    private Point convertViewPointToBitmapPoint(PointF viewPt, double imageWidthPadding, double imageHeightPadding,
+    private PointF convertViewPointToBitmapPoint(PointF viewPt, double imageWidthPadding, double imageHeightPadding,
                                                  double scale, boolean adjustForPolygonViewCircles) {
         return convertViewToBitmapPoint(viewPt.x, viewPt.y, imageWidthPadding, imageHeightPadding, scale, adjustForPolygonViewCircles);
     }
@@ -679,7 +679,7 @@ public class TakePictureActivity extends AppCompatActivity {
 
         for (PointF point: points) {
             // Convert the point to bitmap coordinates and add it to the result list
-            Point bitmapPt = convertViewPointToBitmapPoint(point, imageWidthPadding, imageHeightPadding, scale, adjustForPolygonViewCircles);
+            PointF bitmapPt = convertViewPointToBitmapPoint(point, imageWidthPadding, imageHeightPadding, scale, adjustForPolygonViewCircles);
 
             // Rotate the point if necessary
             // Note: Coordinates will be into the bitmap as loaded from memory without rotation
@@ -687,7 +687,7 @@ public class TakePictureActivity extends AppCompatActivity {
                 bitmapPt = rotatePoint(bitmapPt, (360 - previousRotation) % 360, baseH, baseW);
             }
 
-            bitmapPts.add(new PointF(bitmapPt));
+            bitmapPts.add(bitmapPt);
         }
 
         return bitmapPts;
