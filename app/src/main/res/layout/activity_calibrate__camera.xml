@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+   <LinearLayout
+       android:id="@+id/CalibrateCamera_linearLayout"
+       xmlns:tools="http://schemas.android.com/tools"
+       xmlns:android="http://schemas.android.com/apk/res/android"
+       xmlns:app="http://schemas.android.com/apk/res-auto"
+       android:layout_width="match_parent"
+       android:layout_height="match_parent"
+       android:orientation="vertical"
+       tools:context="edu.psu.armstrong1.gridmeasure.Calibrate_Camera">
+
+    <FrameLayout android:id="@+id/CalibrateCamera_frameLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+
+        <ImageView
+            android:id="@+id/CalibrateCamera_imageView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/CalibrateCamera_imageView_description" />
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/button_CalibrationTakePicture"
+            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:text="@string/button_Calibration_picture"
+            android:onClick="dispatchTakePictureIntent"/>
+        <Button
+            android:id="@+id/button_CalibrationAddPictures"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/button_Calibration_add_pictures"
+            android:onClick="dispatchTakePictureIntent"
+            android:visibility="gone"/>
+        <Button
+            android:id="@+id/button_CalibrationFinish"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/button_Calibration_finish"
+            android:onClick="callChuruco"
+            android:visibility="gone"
+            />
+        </LinearLayout>
+
+   </LinearLayout>
+

@@ -43,7 +43,8 @@
 
         <activity android:name=".CalculationActivity" />
         <activity android:name=".BluetoothActivity" />
-        <activity android:name=".ShowMeasurementActivity"></activity>
+        <activity android:name=".ShowMeasurementActivity" />
+        <activity android:name=".Calibrate_Camera"></activity>
     </application>
 
 </manifest>

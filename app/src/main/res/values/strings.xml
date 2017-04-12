@@ -4,6 +4,8 @@
     <!--MainActivity screen-->
     <string name="button_main_goToTakePicture">Test taking a picture</string>
     <string name="button_main_goToTakePictureTEST">Test bounding box</string>
+    <string name="test_bluetooth">Test bluetooth</string>
+    <string name="button_main_goToCalibrateCamera">Calibrate Camera</string>
 
     <!--TakePictureActivity screen-->
     <string name="button_takePicture_camera">Take a picture</string>
@@ -17,7 +19,6 @@
     <string name="button_calculation_newJob">Cancel calculation and start a new cut job</string>
     <string name="button_calculation_sendToCutter">Send measurements to cutter</string>
     <string name="calculation_loadingMessage">Calculating measurements...</string>
-
 
 
     <!--SendMeasurementActivity screen-->
@@ -39,6 +40,13 @@
     <string name="bluetooth_refreshDescriptor">Refresh</string>
 
 
+    <!--Calibrate Camera screen-->
+    <string name="button_Calibration_picture">Take 5 Calibration Pictures</string>
+    <string name="button_Calibration_add_pictures">Take another photo</string>
+    <string name="button_Calibration_finish">Finish</string>
+    <string name="CalibrateCamera_imageView_description">Current Picture</string>
+
+
     <!--Warning/Error Messages-->
     <string name="warn_no_camera">No camera app was found.\nYou must have a camera app installed to use this app</string>
     <string name="warn_3_points">You must keep at least 3 points</string>
@@ -50,4 +58,5 @@
     <string name="error_noBluetooth">Bluetooth not available on this device</string>
     <string name="error_noAcceptableCornerFound">The shape you outlined has no acceptable bottom left corner</string>
     <string name="error_noAcceptableTransformation">The shape you outlined could not be rotated successfully</string>
+
 </resources>
