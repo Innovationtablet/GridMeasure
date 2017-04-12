@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.PointF;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -27,6 +28,7 @@ public class CalculationActivity extends AppCompatActivity {
     ArrayList<PointF> polygonPoints;                            // the points of the PolygonView
     Context appContext = null;                                  // the application context (used if this is used as a class not an activity)
     boolean workerThreadMade = false;                           // whether the worker thread to do the calculations has been made yet
+    private Handler handler;                                    // Handler used to communicate with the UI thread from the worker thread
 
     // Constructor for when using this as an activity
     public CalculationActivity() {
@@ -51,6 +53,7 @@ public class CalculationActivity extends AppCompatActivity {
         if (!workerThreadMade) {
             // Start a worker thread to do calculation
             (new Thread(new workerThread(polygonPoints))).start();
+            handler = new Handler();
             workerThreadMade = true;
         }
     }
@@ -336,11 +339,29 @@ public class CalculationActivity extends AppCompatActivity {
             // works on Lists. We do a conversion here.
             ArrayList<PointF> transformedPoints = new ArrayList<>(GridDetectionUtils.measurementsFromOutline(image, polygonPoints));
 
-            // Transform the points
-            transformedPoints = findCornerAndTransformPoints(transformedPoints, false);
+            // Transform the points if ChArUco detection was successful
+            if (transformedPoints != null) {
+                transformedPoints = findCornerAndTransformPoints(transformedPoints, false);
+            } else {
+                handler.post(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), R.string.error_charucoFailed, Toast.LENGTH_LONG).show();
+                    }
+                });
+                return;
+            }
 
-            // Go to the next activity
-            calculationsDone(transformedPoints);
+            // Go to the next activity if transformation was successful
+            if (transformedPoints != null) {
+                calculationsDone(transformedPoints);
+            } else {
+                handler.post(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), R.string.error_transformFailed, Toast.LENGTH_LONG).show();
+                    }
+                });
+                return;
+            }
         }
     };
 }
