@@ -29,6 +29,7 @@ STANDARD_RECEIVE_SIZE = 1024
 UUID = "94f39d29-7d6d-437d-973b-fba39e49d4ee"
 
 #Globals
+logFile = 'server.log'
 saveToDir = './incomingData'
 logLevel = logging.INFO
 saveFiles = True
@@ -216,9 +217,18 @@ def getFileName(directory):
     
 def setupLogging(level):
     global logger
-    FORMAT = '%(levelname)s %(asctime)-15s: %(message)s'
+    # Create the logger
+    FORMAT = '%(levelname)s %(asctime)-15s: %(message)s'    
     logging.basicConfig(stream=sys.stdout, level=getLoggingLevel(level), format=FORMAT)
+    
+    # Create a file handler to output log to file
+    fh = logging.FileHandler(logFile)
+    fh.setLevel(level)
+    fh.setFormatter(logging.Formatter(FORMAT))
+    
+    # Create the logger and attach file output
     logger = logging.getLogger("main")
+    logger.addHandler(fh)
     logger.debug("Logger setup to %s" % level)
 
 

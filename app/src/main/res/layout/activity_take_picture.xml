@@ -53,12 +53,22 @@
 
 
         <Button
-            android:id="@+id/button_AcceptOutline"
+            android:id="@+id/button_acceptOutline"
             android:layout_height="match_parent"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:text="@string/button_takePicture_accept"
             android:onClick="dispatchCalculationIntent"
+            android:visibility="gone"/>
+
+
+        <Button
+            android:id="@+id/button_transform"
+            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:text="@string/button_takePicture_transform"
+            android:onClick="detectCornersAndTransform"
             android:visibility="gone"/>
 
     </LinearLayout>
