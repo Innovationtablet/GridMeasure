@@ -74,6 +74,13 @@ public class MainActivity extends AppCompatActivity {
         startPictureActivity(view, true);
     }
 
+    // Called when user clicks the calibrate camera button
+    public void calibrateCamera(View view) {
+        //start Calibrate_Camera Activity
+        Intent intent = new Intent(view.getContext(), Calibrate_Camera.class);
+        view.getContext().startActivity(intent);
+    }
+
     private void startPictureActivity(View view, boolean debugOn) {
         // Start TakePictureActivity
         Intent intent = new Intent(view.getContext(), TakePictureActivity.class);

@@ -41,8 +41,17 @@
         android:id="@+id/button_main_goToBluetoothTest"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Test bluetooth"
+        android:text="@string/test_bluetooth"
         android:onClick="testBluetooth"
         android:layout_below="@id/button_main_goToTakePictureTEST"
         android:layout_centerHorizontal="true"/>
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/button_main_goToBluetoothTest"
+        android:layout_centerHorizontal="true"
+        android:onClick="calibrateCamera"
+        android:text="@string/button_main_goToCalibrateCamera" />
 </RelativeLayout>
