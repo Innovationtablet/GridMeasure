@@ -1,3 +1,32 @@
+/*
+Code derived from jhansireddy's AndroidScannerDemo Github repository, specifically the PolygonView Class:
+    https://github.com/jhansireddy/AndroidScannerDemo
+    https://github.com/jhansireddy/AndroidScannerDemo/blob/master/ScanDemoExample/scanlibrary/src/main/java/com/scanlibrary/PolygonView.java
+
+The work is protected under the following license:
+    MIT License
+
+    Copyright (c) 2016 Jhansi Karee
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
 package edu.psu.armstrong1.gridmeasure;
 
 import android.content.Context;
@@ -18,8 +47,6 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -193,10 +220,18 @@ public class PolygonView extends FrameLayout {
     }
 
     public Map<Integer, PointF> getPoints() {
-
         Map<Integer, PointF> points = new HashMap<>();
         for (int i = 0; i < pointers.size(); i++) {
             points.put(i, new PointF(pointers.get(i).getX(), pointers.get(i).getY()));
+        }
+
+        return points;
+    }
+
+    public ArrayList<PointF> getPointsArray() {
+        ArrayList<PointF> points = new ArrayList<>();
+        for (int i = 0; i < pointers.size(); i++) {
+            points.add(new PointF(pointers.get(i).getX(), pointers.get(i).getY()));
         }
 
         return points;
@@ -250,6 +285,22 @@ public class PolygonView extends FrameLayout {
         imageView.setOnLongClickListener(new LongPressListenerImpl());
         imageView.setOnTouchListener(new TouchListenerImpl());
         return imageView;
+    }
+
+    public void removeAllColorFilters() {
+        for (ImageView v: pointers) {
+            v.clearColorFilter();
+        }
+    }
+
+    public void darkenPointer(int index) {
+        pointers.get(index).setColorFilter(R.color.orange);
+    }
+
+    public void darkenPointers(ArrayList<Integer> indices) {
+        for (int index: indices) {
+            darkenPointer(index);
+        }
     }
 
     @Override

@@ -1,3 +1,24 @@
+/*
+Portions of code derived from a tutorial posted on Android developer:
+    https://developer.android.com/training/camera/photobasics.html
+    
+The work is protected under the following license:
+    Copyright [2016] [Android Open Source Project]
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+
 package edu.psu.armstrong1.gridmeasure;
 
 import android.app.Activity;
@@ -30,6 +51,7 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -223,8 +245,37 @@ public class TakePictureActivity extends AppCompatActivity {
         // Start CalculationActivity
         Intent intent = new Intent(view.getContext(), CalculationActivity.class);
         intent.putExtra(PHOTO_PATH_INTENT_KEY, currentPhotoPath);
-        intent.putExtra(POINTS_INTENT_KEY, (HashMap) polygonView.getPoints());
+        intent.putExtra(POINTS_INTENT_KEY, polygonView.getPointsArray());
+        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);   // don't keep activity in the history (if back button is pressed later, it skips this activity)
         view.getContext().startActivity(intent);
+    }
+
+
+    // Called when the user clicks the Transform button
+    public void detectCornersAndTransform(View view) {
+        // Get rid of all previous color filters
+        polygonView.removeAllColorFilters();
+
+        // Get the points
+        ArrayList<PointF> points = polygonView.getPointsArray();
+
+        // Transform the points
+        CalculationActivity calc = new CalculationActivity(getApplicationContext());
+        ArrayList<PointF> newPoints = calc.findCornerAndTransformPoints(points, false);
+
+        // If transformation successful, show the new points
+        if (newPoints != null) {
+            // Turn the points into a map
+            HashMap<Integer, PointF> newPointMap = new HashMap<>();
+            for (PointF p : newPoints) {
+                // Make sure the (0,0) point starts on the actual image
+                newPointMap.put(newPoints.indexOf(p), new PointF(p.x + (float) imageWidthDif, p.y + (float) imageHeightDif));
+            }
+
+            // Set the points
+            polygonView.setPoints(newPointMap);
+            polygonView.invalidate();
+        }
     }
 
     private File createImageFile(View view) throws IOException {
@@ -410,7 +461,12 @@ public class TakePictureActivity extends AppCompatActivity {
         previousRotation = (int) rotate;
 
         // Show Accept Outline button
-        findViewById(R.id.button_AcceptOutline).setVisibility(View.VISIBLE);
+        findViewById(R.id.button_acceptOutline).setVisibility(View.VISIBLE);
+
+        // Only show the transform button in debugging mode
+        if (DEBUGGING_MODE) {
+            findViewById(R.id.button_transform).setVisibility(View.VISIBLE);
+        }
     }
 
     public static Bitmap rotateBitmap(Bitmap source, float angle)

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/showMeasurement_topLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="edu.psu.armstrong1.gridmeasure.ShowMeasurementActivity"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/showMeasurement_tileImageView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.5"
+        android:scaleType="fitCenter"
+        android:paddingTop="@dimen/navigation_padding_bottom"/>
+
+
+    <ListView
+        android:id="@+id/showMeasurement_measurementList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="@dimen/navigation_padding_bottom" />
+
+    <LinearLayout
+        android:id="@+id/showMeasurement_bottomButtons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/button_sendMeasurements"
+            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:text="@string/button_showMeasurement_sendToCutter"
+            android:onClick="dispatchSendMeasurements"/>
+
+    </LinearLayout>
+
+
+</LinearLayout>
