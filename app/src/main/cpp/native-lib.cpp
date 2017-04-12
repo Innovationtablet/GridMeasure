@@ -12,6 +12,8 @@ cv::Mat cameraMatrix, distCoeffs;
 std::vector<cv::Mat> rvecs, tvecs;
 double repError;
 
+bool calibrated = false;
+
 /**
  *
  */
@@ -87,6 +89,9 @@ bool calibrateWithCharuco(
     int calibrationFlags = 0;
     repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
 
+    // Mark as calibrated
+    calibrated = true;
+
     return true;
 }
 
@@ -101,6 +106,12 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
     jobject imageJobject,
     jfloatArray outlinePointsJfloatArray)
 {
+    if (!calibrated)
+    {
+        cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+        distCoeffs = cv::Mat::zeros(8, 1, CV_64F);  // todo is this right?
+    }
+
     jfloatArray err = env->NewFloatArray(0);
 
     jclass matclass = env->FindClass("org/opencv/core/Mat");
@@ -134,9 +145,6 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
         cv::Point2f worldPoint = imagePointToWorldPoint(cv::Point2f(cv::Point2f(jfloatArr[i], jfloatArr[i+1])), rvec, tvec);
         outPoints[i] = worldPoint.x;
         outPoints[i+1] = worldPoint.y;
-
-
-
     }
 
     jfloatArray out = env->NewFloatArray(env->GetArrayLength(outlinePointsJfloatArray));
