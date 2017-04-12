@@ -104,7 +104,6 @@ public class Calibrate_Camera extends AppCompatActivity {
 
     public void callChuruco(View view){
         String[] fileNames2 = fileNames.toArray(new String[fileNames.size()]);
-        System.out.println(fileNames2);
         GridDetectionUtils.calibrateWithCharuco(fileNames2);
     }
 
