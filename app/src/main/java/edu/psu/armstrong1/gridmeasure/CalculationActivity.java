@@ -9,7 +9,11 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
+
 import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 public class CalculationActivity extends AppCompatActivity {
@@ -23,7 +27,6 @@ public class CalculationActivity extends AppCompatActivity {
     ArrayList<PointF> polygonPoints;                            // the points of the PolygonView
     Context appContext = null;                                  // the application context (used if this is used as a class not an activity)
     boolean workerThreadMade = false;                           // whether the worker thread to do the calculations has been made yet
-
 
     // Constructor for when using this as an activity
     public CalculationActivity() {
@@ -327,8 +330,14 @@ public class CalculationActivity extends AppCompatActivity {
         }
 
         public void run() {
+            // Convert the points to real-world dimensions.
+            Mat image = Imgcodecs.imread(currentPhotoPath, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
+            // The code in this file works on ArrayLists, while the code in GridDetectionUtils
+            // works on Lists. We do a conversion here.
+            ArrayList<PointF> transformedPoints = new ArrayList<>(GridDetectionUtils.measurementsFromOutline(image, polygonPoints));
+
             // Transform the points
-            ArrayList<PointF> transformedPoints = findCornerAndTransformPoints(polygonPoints, false);
+            transformedPoints = findCornerAndTransformPoints(transformedPoints, false);
 
             // Go to the next activity
             calculationsDone(transformedPoints);

@@ -35,13 +35,13 @@ public class ShowMeasurementActivity extends AppCompatActivity {
         polygonPoints = (ArrayList<PointF>) getIntent().getExtras().get(TakePictureActivity.POINTS_INTENT_KEY);
 
         // Points used for testing since no picture with ChArUco is available
-        polygonPoints = new ArrayList<PointF>();
+        /*polygonPoints = new ArrayList<PointF>();
         polygonPoints.add(new PointF(0,0));
         polygonPoints.add(new PointF(0,24));
         polygonPoints.add(new PointF(17,17));
         polygonPoints.add(new PointF(12,12));
         polygonPoints.add(new PointF(18,13));
-        polygonPoints.add(new PointF(15,0));
+        polygonPoints.add(new PointF(15,0));*/
         // End testing code
 
         numberOfPoints = polygonPoints.size();
