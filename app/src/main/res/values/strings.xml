@@ -14,9 +14,14 @@
 
 
     <!--CalculationActivity screen-->
-    <string name="button_calculation_newJob">Start a new cut job</string>
+    <string name="button_calculation_newJob">Cancel calculation and start a new cut job</string>
     <string name="button_calculation_sendToCutter">Send measurements to cutter</string>
     <string name="calculation_loadingMessage">Calculating measurements...</string>
+
+
+
+    <!--SendMeasurementActivity screen-->
+    <string name="button_showMeasurement_sendToCutter">Send measurements to cutter</string>
 
 
     <!--TakePictureActivity Popup menu options-->

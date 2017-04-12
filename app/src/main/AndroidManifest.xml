@@ -42,7 +42,8 @@
         </provider>
 
         <activity android:name=".CalculationActivity" />
-        <activity android:name=".BluetoothActivity"></activity>
+        <activity android:name=".BluetoothActivity" />
+        <activity android:name=".ShowMeasurementActivity"></activity>
     </application>
 
 </manifest>

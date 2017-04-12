@@ -245,7 +245,8 @@ public class TakePictureActivity extends AppCompatActivity {
         // Start CalculationActivity
         Intent intent = new Intent(view.getContext(), CalculationActivity.class);
         intent.putExtra(PHOTO_PATH_INTENT_KEY, currentPhotoPath);
-        intent.putExtra(POINTS_INTENT_KEY, (HashMap) polygonView.getPoints());
+        intent.putExtra(POINTS_INTENT_KEY, polygonView.getPointsArray());
+        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);   // don't keep activity in the history (if back button is pressed later, it skips this activity)
         view.getContext().startActivity(intent);
     }
 

@@ -10,18 +10,19 @@ import android.view.View;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.TreeMap;
 
 public class CalculationActivity extends AppCompatActivity {
     // Constants
-    public static final float CUTTER_MAX_X = 24;                 // max width of the tile cutter
-    public static final float CUTTER_MAX_Y = 24;                 // max height of the tile cutter
+    public static final float CUTTER_MAX_X = 24;                // max width of the tile cutter
+    public static final float CUTTER_MAX_Y = 24;                // max height of the tile cutter
+    private static final String THREAD_KEY = "WORKER_THREAD";   // key to savedInstanceBundle for workerThreadMade
 
     // Variables
     String currentPhotoPath = null;                             // path to last picture taken
-    Map<Integer, PointF> polygonPoints;                         // the points of the PolygonView
+    ArrayList<PointF> polygonPoints;                            // the points of the PolygonView
     Context appContext = null;                                  // the application context (used if this is used as a class not an activity)
+    boolean workerThreadMade = false;                           // whether the worker thread to do the calculations has been made yet
 
 
     // Constructor for when using this as an activity
@@ -41,26 +42,42 @@ public class CalculationActivity extends AppCompatActivity {
 
         // Get the bitmap and points
         currentPhotoPath = getIntent().getStringExtra(TakePictureActivity.PHOTO_PATH_INTENT_KEY);
-        polygonPoints = (Map<Integer, PointF>) getIntent().getExtras().get(TakePictureActivity.POINTS_INTENT_KEY);
+        polygonPoints = (ArrayList<PointF>) getIntent().getExtras().get(TakePictureActivity.POINTS_INTENT_KEY);
+
+        // Only create a worker thread if one hasn't been made yet
+        if (!workerThreadMade) {
+            // Start a worker thread to do calculation
+            (new Thread(new workerThread(polygonPoints))).start();
+            workerThreadMade = true;
+        }
     }
 
 
-    public void calculationsDone() {
-        findViewById(R.id.calculation_progressBar).setVisibility(View.GONE);
-        findViewById(R.id.button_sendMeasurements).setVisibility(View.VISIBLE);
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        // Save the local variables
+        savedInstanceState.putString(TakePictureActivity.PHOTO_PATH_INTENT_KEY, currentPhotoPath);
+        savedInstanceState.putSerializable(TakePictureActivity.POINTS_INTENT_KEY, polygonPoints);
+        savedInstanceState.putBoolean(THREAD_KEY, workerThreadMade);
+
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        // Restore state info and photo path
+        super.onRestoreInstanceState(savedInstanceState);
+        currentPhotoPath = savedInstanceState.getString(TakePictureActivity.PHOTO_PATH_INTENT_KEY);
+        polygonPoints = (ArrayList<PointF>) savedInstanceState.getSerializable(TakePictureActivity.POINTS_INTENT_KEY);
+        workerThreadMade = savedInstanceState.getBoolean(THREAD_KEY);
     }
 
 
-    // Called when user clicks on the progress spinner
-    // Note: This is a temporary function
-    public void endCalculation(View view) {
-        calculationsDone();
-    }
-
-
-    // Called when the user clicks the Send Measurements button
-    public void dispatchSendMeasurements(View view) {
-        // stub function to be filled in
+    public void calculationsDone(ArrayList<PointF> transformedPoints) {
+        // Go to ShowMeasurementActivity
+        Intent intent = new Intent(getApplicationContext(), ShowMeasurementActivity.class);
+        intent.putExtra(TakePictureActivity.POINTS_INTENT_KEY, transformedPoints);
+        startActivity(intent);
     }
 
 
@@ -205,9 +222,10 @@ public class CalculationActivity extends AppCompatActivity {
         double cosA = Math.cos(angle);
         double sinA = Math.sin(angle);
 
-        // Transform each point
+        // Transform each point (start at corner and work clockwise)
         Log.d("CalculationActivity", "Transforming each point with (h,k) = (" + h + ", " + k + "), angle = " + angle);
-        for (PointF point: points) {
+        for (int i = 0; Math.abs(i) < size; i = i + order) {
+            PointF point = points.get((i + cornerIndex + size) % size);
             float x = point.x;
             float y = point.y;
 
@@ -300,4 +318,20 @@ public class CalculationActivity extends AppCompatActivity {
         Log.d("CalculationAcitivty", "Dot product: (" + x1 + ", " + y1 + ") . (" + x2 + ", " + y2 + ") = " + dotProd);
         return dotProd;
     }
+
+    final class workerThread implements Runnable {
+        private ArrayList<PointF> points;
+
+        public workerThread(ArrayList<PointF> pointsList) {
+            points = pointsList;
+        }
+
+        public void run() {
+            // Transform the points
+            ArrayList<PointF> transformedPoints = findCornerAndTransformPoints(polygonPoints, false);
+
+            // Go to the next activity
+            calculationsDone(transformedPoints);
+        }
+    };
 }
