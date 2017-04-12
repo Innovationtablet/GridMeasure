@@ -14,6 +14,12 @@ double repError;
 
 bool calibrated = false;
 
+// TODO Still not the best way to do this, but better.
+const cv::Ptr<cv::aruco::CharucoBoard> getBoard() {
+    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
+    return cv::aruco::CharucoBoard::create(5, 7, 1.0f, 0.5f, dictionary);
+}
+
 /**
  *
  */
@@ -119,9 +125,7 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
 
     cv::Mat image = *(cv::Mat*)env->CallLongMethod(imageJobject, getPtrMethod);
 
-    // TODO this shouldn't go here
-    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
-    const cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 100, 50, dictionary);
+    const cv::Ptr<cv::aruco::CharucoBoard> board = getBoard();
 
     //estimatePoseCharucoBoard
     std::vector<cv::Point2f> charucoCorners;
@@ -162,8 +166,7 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_calibrateWithCharuco
     jobjectArray imagePathsArray)
 {
     // TODO this shouldn't go here
-    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
-    const cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 100, 50, dictionary);
+    const cv::Ptr<cv::aruco::CharucoBoard> board = getBoard();
 
     std::vector<cv::Mat> images;
 
@@ -195,9 +198,7 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_calibrateWithCharuco
     jobject,
     jobjectArray imageArray)
 {
-    // TODO this shouldn't go here
-    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
-    const cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 100, 50, dictionary);
+    const cv::Ptr<cv::aruco::CharucoBoard> board = getBoard();
 
     std::vector<cv::Mat> images;
 
@@ -242,8 +243,7 @@ Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_stringFromJNI(
     // is copied from in mat before in mat is turned to gray.
     *pOutMat = pInMat->clone();
 
-    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
-    const cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 100, 50, dictionary);
+    const cv::Ptr<cv::aruco::CharucoBoard> board = getBoard();
 
     std::vector<cv::Point2f> charucoCorners;
     std::vector<int> charucoIds;
