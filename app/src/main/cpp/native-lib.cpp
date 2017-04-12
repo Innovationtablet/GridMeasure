@@ -12,6 +12,14 @@ cv::Mat cameraMatrix, distCoeffs;
 std::vector<cv::Mat> rvecs, tvecs;
 double repError;
 
+bool calibrated = false;
+
+// TODO Still not the best way to do this, but better.
+const cv::Ptr<cv::aruco::CharucoBoard> getBoard() {
+    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
+    return cv::aruco::CharucoBoard::create(5, 7, 1.0f, 0.5f, dictionary);
+}
+
 /**
  *
  */
@@ -87,6 +95,9 @@ bool calibrateWithCharuco(
     int calibrationFlags = 0;
     repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
 
+    // Mark as calibrated
+    calibrated = true;
+
     return true;
 }
 
@@ -101,6 +112,12 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
     jobject imageJobject,
     jfloatArray outlinePointsJfloatArray)
 {
+    if (!calibrated)
+    {
+        cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+        distCoeffs = cv::Mat::zeros(8, 1, CV_64F);  // todo is this right?
+    }
+
     jfloatArray err = env->NewFloatArray(0);
 
     jclass matclass = env->FindClass("org/opencv/core/Mat");
@@ -108,9 +125,7 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
 
     cv::Mat image = *(cv::Mat*)env->CallLongMethod(imageJobject, getPtrMethod);
 
-    // TODO this shouldn't go here
-    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
-    const cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 100, 50, dictionary);
+    const cv::Ptr<cv::aruco::CharucoBoard> board = getBoard();
 
     //estimatePoseCharucoBoard
     std::vector<cv::Point2f> charucoCorners;
@@ -134,9 +149,6 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
         cv::Point2f worldPoint = imagePointToWorldPoint(cv::Point2f(cv::Point2f(jfloatArr[i], jfloatArr[i+1])), rvec, tvec);
         outPoints[i] = worldPoint.x;
         outPoints[i+1] = worldPoint.y;
-
-
-
     }
 
     jfloatArray out = env->NewFloatArray(env->GetArrayLength(outlinePointsJfloatArray));
@@ -154,8 +166,7 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_calibrateWithCharuco
     jobjectArray imagePathsArray)
 {
     // TODO this shouldn't go here
-    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
-    const cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 100, 50, dictionary);
+    const cv::Ptr<cv::aruco::CharucoBoard> board = getBoard();
 
     std::vector<cv::Mat> images;
 
@@ -187,9 +198,7 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_calibrateWithCharuco
     jobject,
     jobjectArray imageArray)
 {
-    // TODO this shouldn't go here
-    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
-    const cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 100, 50, dictionary);
+    const cv::Ptr<cv::aruco::CharucoBoard> board = getBoard();
 
     std::vector<cv::Mat> images;
 
@@ -234,8 +243,7 @@ Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_stringFromJNI(
     // is copied from in mat before in mat is turned to gray.
     *pOutMat = pInMat->clone();
 
-    const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
-    const cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 100, 50, dictionary);
+    const cv::Ptr<cv::aruco::CharucoBoard> board = getBoard();
 
     std::vector<cv::Point2f> charucoCorners;
     std::vector<int> charucoIds;

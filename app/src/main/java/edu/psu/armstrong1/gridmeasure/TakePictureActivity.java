@@ -85,7 +85,8 @@ public class TakePictureActivity extends AppCompatActivity {
     // Variables for showing a picture
     String currentPhotoPath = null;                             // path to last picture taken
     Bitmap bitmap;                                              // the current picture
-    int photoH = 0, photoW = 0;                                 // dimensions of the picture
+    int photoH = 0, photoW = 0;                                 // dimensions of the picture after rotation
+    int baseH, baseW;                                           // dimensions of the picture before rotation
     int targetH = 0, targetW = 0;                               // dimensions of the imageView
     int previousRotation = -1;                                  // previous rotation value of image
     boolean newPic = false;                                     // flag denoting whether there is a new picture to load
@@ -245,7 +246,11 @@ public class TakePictureActivity extends AppCompatActivity {
         // Start CalculationActivity
         Intent intent = new Intent(view.getContext(), CalculationActivity.class);
         intent.putExtra(PHOTO_PATH_INTENT_KEY, currentPhotoPath);
-        intent.putExtra(POINTS_INTENT_KEY, polygonView.getPointsArray());
+
+        // Get the polygon points in bitmap coordinates
+        ArrayList<PointF> points = convertAllViewPointsToBitmapPoints(polygonView.getPointsArray(), imageWidthDif, imageHeightDif, scaleFactor, true, true);
+
+        intent.putExtra(POINTS_INTENT_KEY, points);
         intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);   // don't keep activity in the history (if back button is pressed later, it skips this activity)
         view.getContext().startActivity(intent);
     }
@@ -323,6 +328,8 @@ public class TakePictureActivity extends AppCompatActivity {
         // Get the picture's dimensions
         photoW = bitmap.getWidth();
         photoH = bitmap.getHeight();
+        baseW = bitmap.getWidth();
+        baseH = bitmap.getHeight();
 
         // Get the view the picture will go in
         ImageView imageView = (ImageView) findViewById(R.id.takePicture_imageView);
@@ -411,34 +418,15 @@ public class TakePictureActivity extends AppCompatActivity {
             for (Map.Entry<Integer, PointF> entry : polygonPoints.entrySet()) {
                 //  Step 1: Convert view coordinates to bitmap coordinates of old rotation
                 Point bitmapPt = convertViewPointToBitmapPoint(entry.getValue(), prevImageWidthDif, prevImageHeightDif, previousScaleFactor, true);
-                int newX, newY;
 
                 //  Step 2: Perform rotation on coordinates in bitmap coordinates
-                switch (resultingRotation) {
-                    case 90:
-                        newX = photoW - bitmapPt.y;
-                        newY = bitmapPt.x;
-                        break;
-                    case 180:
-                        newX = photoW - bitmapPt.x;
-                        newY = photoH - bitmapPt.y;
-                        break;
-                    case 270:
-                        newX = bitmapPt.y;
-                        newY = photoH - bitmapPt.x;
-                        break;
-                    default:
-                        // No net rotation
-                        newX = bitmapPt.x;
-                        newY = bitmapPt.y;
-                        break;
-                }
+                Point rotatedPt = rotatePoint(bitmapPt, resultingRotation, photoH, photoW);
 
                 //  Step 3: Convert bitmap coordinates to view coordinates of new rotation
-                PointF viewPt = convertBitmapToViewPoint(newX, newY, imageWidthDif, imageHeightDif, scaleFactor, true);
+                PointF viewPt = convertBitmapPointToViewPoint(rotatedPt, imageWidthDif, imageHeightDif, scaleFactor, true);
                 pointf.put(entry.getKey(), viewPt);
 
-                Log.d("takePicture", "Bitmap: " + bitmapPt + " -> (" + newX + ", " + newY + ")");
+                Log.d("takePicture", "Bitmap: " + bitmapPt + " -> (" + rotatedPt.x + ", " + rotatedPt.y + ")");
                 Log.d("takePicture", "View: " + entry.getValue() + " -> " + viewPt);
             }
 
@@ -476,6 +464,33 @@ public class TakePictureActivity extends AppCompatActivity {
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+    }
+
+    // Note height and width are the new height and width (after rotation)
+    private static Point rotatePoint(Point point, int resultingRotation, int height, int width) {
+        int newX, newY;
+
+        switch (resultingRotation) {
+            case 90:
+                newX = width - point.y;
+                newY = point.x;
+                break;
+            case 180:
+                newX = width - point.x;
+                newY = height - point.y;
+                break;
+            case 270:
+                newX = point.y;
+                newY = height - point.x;
+                break;
+            default:
+                // No net rotation
+                newX = point.x;
+                newY = point.y;
+                break;
+        }
+
+        return new Point(newX, newY);
     }
 
     private static float exifToDegrees(int exifOrientation) {
@@ -656,5 +671,25 @@ public class TakePictureActivity extends AppCompatActivity {
     private Point convertViewPointToBitmapPoint(PointF viewPt, double imageWidthPadding, double imageHeightPadding,
                                                  double scale, boolean adjustForPolygonViewCircles) {
         return convertViewToBitmapPoint(viewPt.x, viewPt.y, imageWidthPadding, imageHeightPadding, scale, adjustForPolygonViewCircles);
+    }
+
+    private ArrayList<PointF> convertAllViewPointsToBitmapPoints(ArrayList<PointF> points, double imageWidthPadding, double imageHeightPadding,
+                                                                 double scale, boolean adjustForPolygonViewCircles, boolean rotatePointsToBaseCoords) {
+        ArrayList<PointF> bitmapPts = new ArrayList<>();
+
+        for (PointF point: points) {
+            // Convert the point to bitmap coordinates and add it to the result list
+            Point bitmapPt = convertViewPointToBitmapPoint(point, imageWidthPadding, imageHeightPadding, scale, adjustForPolygonViewCircles);
+
+            // Rotate the point if necessary
+            // Note: Coordinates will be into the bitmap as loaded from memory without rotation
+            if (rotatePointsToBaseCoords) {
+                bitmapPt = rotatePoint(bitmapPt, (360 - previousRotation) % 360, baseH, baseW);
+            }
+
+            bitmapPts.add(new PointF(bitmapPt));
+        }
+
+        return bitmapPts;
     }
 }

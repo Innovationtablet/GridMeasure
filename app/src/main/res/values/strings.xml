@@ -58,5 +58,6 @@
     <string name="error_noBluetooth">Bluetooth not available on this device</string>
     <string name="error_noAcceptableCornerFound">The shape you outlined has no acceptable bottom left corner</string>
     <string name="error_noAcceptableTransformation">The shape you outlined could not be rotated successfully</string>
-
+    <string name="error_charucoFailed">No ChArUco board was detected.\nPlease try again</string>
+    <string name="error_transformFailed">The outlined shaped doesn\'t seem to be valid.\nPlease try again</string>
 </resources>

@@ -4,12 +4,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.PointF;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
+
 import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 public class CalculationActivity extends AppCompatActivity {
@@ -23,7 +28,7 @@ public class CalculationActivity extends AppCompatActivity {
     ArrayList<PointF> polygonPoints;                            // the points of the PolygonView
     Context appContext = null;                                  // the application context (used if this is used as a class not an activity)
     boolean workerThreadMade = false;                           // whether the worker thread to do the calculations has been made yet
-
+    private Handler handler;                                    // Handler used to communicate with the UI thread from the worker thread
 
     // Constructor for when using this as an activity
     public CalculationActivity() {
@@ -48,6 +53,7 @@ public class CalculationActivity extends AppCompatActivity {
         if (!workerThreadMade) {
             // Start a worker thread to do calculation
             (new Thread(new workerThread(polygonPoints))).start();
+            handler = new Handler();
             workerThreadMade = true;
         }
     }
@@ -327,11 +333,35 @@ public class CalculationActivity extends AppCompatActivity {
         }
 
         public void run() {
-            // Transform the points
-            ArrayList<PointF> transformedPoints = findCornerAndTransformPoints(polygonPoints, false);
+            // Convert the points to real-world dimensions.
+            Mat image = Imgcodecs.imread(currentPhotoPath, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
+            // The code in this file works on ArrayLists, while the code in GridDetectionUtils
+            // works on Lists. We do a conversion here.
+            ArrayList<PointF> transformedPoints = new ArrayList<>(GridDetectionUtils.measurementsFromOutline(image, polygonPoints));
 
-            // Go to the next activity
-            calculationsDone(transformedPoints);
+            // Transform the points if ChArUco detection was successful
+            if (transformedPoints != null) {
+                transformedPoints = findCornerAndTransformPoints(transformedPoints, false);
+            } else {
+                handler.post(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), R.string.error_charucoFailed, Toast.LENGTH_LONG).show();
+                    }
+                });
+                return;
+            }
+
+            // Go to the next activity if transformation was successful
+            if (transformedPoints != null) {
+                calculationsDone(transformedPoints);
+            } else {
+                handler.post(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), R.string.error_transformFailed, Toast.LENGTH_LONG).show();
+                    }
+                });
+                return;
+            }
         }
     };
 }
