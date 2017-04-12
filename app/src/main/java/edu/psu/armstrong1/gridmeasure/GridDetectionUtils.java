@@ -25,8 +25,8 @@ class GridDetectionUtils {
 
     private static final String TAG = "GridDetectionUtils";
 
+    // FIXME: 4/12/2017 Why do these show up as "Cannot resolve corresponding JNI function..." in AS?
     public static native String stringFromJNI(long inMatAddr, long outMatAddr);
-
     private static native void calibrateWithCharucoNative(String[] imageFilepaths);
     private static native void calibrateWithCharucoMatsNative(Mat[] images);
     private static native float[] measurementsFromOutlineNative(Mat image, float[] points);
