@@ -9,6 +9,10 @@
         android:title="@string/takePicture_popupMenu_addPoint"/>
 
     <item
+        android:id="@+id/circlePopup_dpad"
+        android:title="@string/takePicture_popupMenu_dpad"/>
+
+    <item
         android:id="@+id/circlePopup_cancel"
         android:title="@string/takePicture_popupMenu_cancel"/>
 

@@ -28,6 +28,7 @@
     <!--TakePictureActivity Popup menu options-->
     <string name="takePicture_popupMenu_deletePoint">Delete Point</string>
     <string name="takePicture_popupMenu_addPoint">Add another Point</string>
+    <string name="takePicture_popupMenu_dpad">Show Directional-Pad</string>
     <string name="takePicture_popupMenu_cancel">Cancel</string>
 
 
@@ -45,6 +46,13 @@
     <string name="button_Calibration_add_pictures">Take another photo</string>
     <string name="button_Calibration_finish">Finish</string>
     <string name="CalibrateCamera_imageView_description">Current Picture</string>
+
+
+    <!--D-Pad content description-->
+    <string name="dPad_UpArrow_description">Up</string>
+    <string name="dPad_DownArrow_description">Down</string>
+    <string name="dPad_LeftArrow_description">Left</string>
+    <string name="dPad_RightArrow_description">Right</string>
 
 
     <!--Warning/Error Messages-->

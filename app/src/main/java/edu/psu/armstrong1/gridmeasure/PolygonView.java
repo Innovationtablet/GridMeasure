@@ -43,10 +43,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,6 +58,11 @@ import java.util.Map;
 public class PolygonView extends FrameLayout {
     public static final int STARTING_NUM_POINTS = 4;    // Number of points to start with
     public static final int MINIMUM_NUM_POINTS = 3;     // Minimum number of points shape must have
+    public static final int DPAD_MOVEMENT_PIXELS = 1;   // the number of pixels to move with each click of the dpad
+    public static final int DPAD_UP = 1;                // Constants for the directions
+    public static final int DPAD_DOWN = -1;
+    public static final int DPAD_LEFT = -2;
+    public static final int DPAD_RIGHT = 2;
 
     protected Context context;
     private Paint paint;                                // Paint object describing how to draw lines
@@ -65,6 +72,10 @@ public class PolygonView extends FrameLayout {
     PointF centerPoint;                                 // center point of the bounding box
     float totalMovementX;                               // total movement when moving points around
     float totalMovementY;                               //   (used for detecting long-presses)
+    public boolean dpadShowing = false;                 // whether or not the dpad is showing
+    RelativeLayout dpad;                                // the dpad
+    int dpadDimension;                                  // the size of the dpad
+    int dpadPointer;                                    // pointer index that the dpad is on
 
     public PolygonView(Context context) {
         super(context);
@@ -421,6 +432,11 @@ public class PolygonView extends FrameLayout {
                     // Remove the current point
                     removePoint(pointPosition, true);
                     break;
+                case R.id.circlePopup_dpad:
+                    // Show the dpad
+                    dpadPointer = pointPosition;
+                    showDpad(dpadPointer);
+                    break;
                 default:
                     // No action
                     break;
@@ -485,23 +501,110 @@ public class PolygonView extends FrameLayout {
         }
     }
 
+    public void setupDpad(RelativeLayout dpadView) {
+        dpad = dpadView;
+    }
+
+
+    private void showDpad(int pointId) {
+        // Get the dpad's width
+        dpadDimension = dpad.getWidth();
+
+        // Calculate the x and y coordinates
+        dpad.setX(pointers.get(pointId).getX() + ((circleDiameter - dpadDimension) / 2));
+        dpad.setY(pointers.get(pointId).getY() + ((circleDiameter - dpadDimension) / 2));
+
+        // Show the dpad
+        Log.d("PolygonView", "Show Dpad");
+        dpad.setVisibility(View.VISIBLE);
+        dpadShowing = true;
+
+        // Turn on zooming
+        zoomDpad();
+    }
+
+    private void hideDpad() {
+        // Hide the Dpad
+        Log.d("PolygonView", "Hide Dpad");
+        dpad.setVisibility(View.GONE);
+        dpadShowing = false;
+
+        // Stop zooming
+        ((TakePictureActivity) context).stopZooming();
+    }
+
+
+    public void moveFromDPad(int direction) {
+        Log.d("PolygonView", "Dpad: Movement detected");
+        ImageView point = pointers.get(dpadPointer);
+        switch (direction) {
+            // Move the pointer and the dpad accordingly
+            case DPAD_UP:
+                Log.d("PolygonView", "Dpad: Move Up");
+                point.setY(point.getY() - DPAD_MOVEMENT_PIXELS);
+                dpad.setY(dpad.getY() - DPAD_MOVEMENT_PIXELS);
+                break;
+            case DPAD_DOWN:
+                Log.d("PolygonView", "Dpad: Move Down");
+                point.setY(point.getY() + DPAD_MOVEMENT_PIXELS);
+                dpad.setY(dpad.getY() + DPAD_MOVEMENT_PIXELS);
+                break;
+            case DPAD_LEFT:
+                Log.d("PolygonView", "Dpad: Move Left");
+                point.setX(point.getX() - DPAD_MOVEMENT_PIXELS);
+                dpad.setX(dpad.getX() - DPAD_MOVEMENT_PIXELS);
+                break;
+            case DPAD_RIGHT:
+                Log.d("PolygonView", "Dpad: Move Right");
+                point.setX(point.getX() + DPAD_MOVEMENT_PIXELS);
+                dpad.setX(dpad.getX() + DPAD_MOVEMENT_PIXELS);
+                break;
+            default:
+                Log.d("PolygonView", "Dpad: Invalid direction");
+                break;
+        }
+
+        // Redraw lines
+        invalidate();
+
+        // Zoom on the new location
+        zoomDpad();
+    }
+
+    public void zoomDpad() {
+        zoomOnPoint(dpadPointer);
+    }
+
     private void checkZoom(MotionEvent event, View view) {
         int eid = event.getAction();
 
         // Turn on zooming if screen is being touched; off otherwise
         switch (eid) {
             case MotionEvent.ACTION_DOWN:
+                if (dpadShowing) {
+                    // Hide the dpad if it's showing
+                    hideDpad();
+                }
             case MotionEvent.ACTION_MOVE:
                 // Zoom in on center of circle
                 ((TakePictureActivity) context).zoomLocation(view.getX() + view.getWidth() / 2, view.getY() + view.getHeight() / 2, false);
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                ((TakePictureActivity) context).stopZooming();
+                if (!dpadShowing) {
+                    // Stop zooming as long as the dpad isn't showing
+                    ((TakePictureActivity) context).stopZooming();
+                }
                 break;
 
             default:
                 break;
         }
+    }
+
+    private void zoomOnPoint (int index) {
+        // Zoom in on center of circle
+        ImageView view = pointers.get(index);
+        ((TakePictureActivity) context).zoomLocation(view.getX() + view.getWidth() / 2, view.getY() + view.getHeight() / 2, false);
     }
 }

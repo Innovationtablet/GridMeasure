@@ -46,6 +46,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.io.File;
@@ -241,6 +242,32 @@ public class TakePictureActivity extends AppCompatActivity {
         }
     }
 
+
+    // Called when the user uses the dpad for moving a point of the PolygonView
+    public void moveFromDpad(View view) {
+        // Pass the event to the PolygonView
+        int direction = 0;
+        switch (view.getId()) {
+            // Move the pointer and the dpad accordingly
+            case R.id.dPadArrow_Up:
+                direction = PolygonView.DPAD_UP;
+                break;
+            case R.id.dPadArrow_Down:
+                direction = PolygonView.DPAD_DOWN;
+                break;
+            case R.id.dPadArrow_Left:
+                direction = PolygonView.DPAD_LEFT;
+                break;
+            case R.id.dPadArrow_Right:
+                direction = PolygonView.DPAD_RIGHT;
+                break;
+            default:
+                break;
+        }
+        polygonView.moveFromDPad(direction);
+    }
+
+
     // Called when the user clicks the Accept Outline button
     public void dispatchCalculationIntent(View view) {
         // Start CalculationActivity
@@ -387,7 +414,13 @@ public class TakePictureActivity extends AppCompatActivity {
                         break;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
-                        stopZooming();
+                        if (!polygonView.dpadShowing) {
+                            // Stop zooming unless the dpad is showing
+                            stopZooming();
+                        } else {
+                            // Otherwise, resume zooming on dpad
+                            polygonView.zoomDpad();
+                        }
                         break;
 
                     default:
@@ -442,6 +475,9 @@ public class TakePictureActivity extends AppCompatActivity {
 
         // Make bounding box visible
         polygonView.setVisibility(View.VISIBLE);
+
+        // Setup dpad
+        polygonView.setupDpad((RelativeLayout) findViewById(R.id.dPad));
 
         // Save rotation value in case device is rotated
         previousRotation = (int) rotate;
@@ -534,8 +570,8 @@ public class TakePictureActivity extends AppCompatActivity {
         Log.d("TakePictureActivity", "Points: " + polygonView.getPoints());
         if (!bitmapCoords) {
             // Get location in bitmap for magnification
-            zoomLocX = convertViewToBitmapCoords(zoomPosX, imageWidthDif, scaleFactor);
-            zoomLocY = convertViewToBitmapCoords(zoomPosY, imageHeightDif, scaleFactor);
+            zoomLocX = (int) convertViewToBitmapCoords(zoomPosX, imageWidthDif, scaleFactor);
+            zoomLocY = (int) convertViewToBitmapCoords(zoomPosY, imageHeightDif, scaleFactor);
         } else {
             zoomLocX = (int) zoomPosX;
             zoomLocY = (int) zoomPosY;
@@ -616,8 +652,8 @@ public class TakePictureActivity extends AppCompatActivity {
         }
     }
 
-    private int convertViewToBitmapCoords(double viewCoord, double imagePadding, double scale) {
-        return (int) ((viewCoord - imagePadding) / scale);
+    private float convertViewToBitmapCoords(double viewCoord, double imagePadding, double scale) {
+        return (float) ((viewCoord - imagePadding) / scale);
     }
 
     // Note: imagePadding is the width between the beginning of the image view and the beginning of the actual image
