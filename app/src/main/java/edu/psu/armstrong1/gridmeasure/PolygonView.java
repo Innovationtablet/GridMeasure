@@ -503,6 +503,7 @@ public class PolygonView extends FrameLayout {
 
     public void setupDpad(RelativeLayout dpadView) {
         dpad = dpadView;
+        hideDpad();
     }
 
 

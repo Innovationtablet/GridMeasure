@@ -99,21 +99,6 @@ public class ShowMeasurementActivity extends AppCompatActivity {
         listView.setAdapter(adapter);
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        // Save the local variables
-        savedInstanceState.putSerializable(TakePictureActivity.POINTS_INTENT_KEY, polygonPoints);
-
-        super.onSaveInstanceState(savedInstanceState);
-    }
-
-    @Override
-    public void onRestoreInstanceState(Bundle savedInstanceState) {
-        // Restore state info and photo path
-        super.onRestoreInstanceState(savedInstanceState);
-        polygonPoints = (ArrayList<PointF>) savedInstanceState.getSerializable(TakePictureActivity.POINTS_INTENT_KEY);
-    }
-
     // Called when the user clicks the Send Measurements button
     public void dispatchSendMeasurements(View view) {
         // stub function to be filled in
