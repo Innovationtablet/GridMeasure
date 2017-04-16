@@ -7,5 +7,9 @@
     <dimen name="polygonViewStrokeWidth">2dp</dimen>
     <!-- ScanPadding must be half of polygonViewCircleWidth -->
 
+    <!--DPad width should be (polygonViewCircleWidth + 2 * width(up_array.png) + 10)-->
+    <dimen name="polygonViewDPadWidth">106dp</dimen>
+    <dimen name="polygonViewDPadArrowWidth">32dp</dimen>
+
 
 </resources>
