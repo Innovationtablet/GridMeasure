@@ -14,14 +14,15 @@ import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.TreeMap;
 
 public class CalculationActivity extends AppCompatActivity {
     // Constants
-    public static final float CUTTER_MAX_X = 24;                // max width of the tile cutter
-    public static final float CUTTER_MAX_Y = 24;                // max height of the tile cutter
-    private static final String THREAD_KEY = "WORKER_THREAD";   // key to savedInstanceBundle for workerThreadMade
+    public static final float CUTTER_MAX_X = 24;                    // max width of the tile cutter
+    public static final float CUTTER_MAX_Y = 24;                    // max height of the tile cutter
+    public final float EXTEND_EDGES_AMOUNT = (float) 0.25;          // default amount to extend the tile's edges (inches)
+    public final boolean EXTEND_EDGES = false;                      // whether or not to extend the tile's edges
+    private static final String THREAD_KEY = "WORKER_THREAD";       // key to savedInstanceBundle for workerThreadMade
 
     // Variables
     String currentPhotoPath = null;                             // path to last picture taken
@@ -325,6 +326,176 @@ public class CalculationActivity extends AppCompatActivity {
         return dotProd;
     }
 
+    // Note: amount should be in inches
+    public ArrayList<PointF> extendEdges(ArrayList<PointF> points, float amount) {
+        ArrayList<PointF> transformedPoints = new ArrayList<>();
+        ArrayList<PointF> edgeVectors = new ArrayList<>();
+        ArrayList<PointF> normalVectors = new ArrayList<>();
+        int size = points.size();
+
+        // Get the edge vectors
+        // Note: edge[i] goes from point i to i+1
+        for (int i = 0; i < size; i++) {
+            PointF startPt = points.get(i);
+            PointF endPt = points.get((i + 1) % size);
+            edgeVectors.add(new PointF(endPt.x - startPt.x, endPt.y - startPt.y));
+        }
+
+        // Find the normal vector that points inward for each edge using ray casting
+        for (int i = 0; i < size; i++) {
+            Log.d("CalculationActivity", "Getting normal vector for edge " + i);
+            int intersections = 0;
+            PointF curPt = points.get(i);
+            PointF normalVector = new PointF(edgeVectors.get(i).y, -edgeVectors.get(i).x);
+            PointF midPtOnEdge = new PointF((curPt.x + points.get((i + 1) % size).x) / 2,
+                                            (curPt.y + points.get((i + 1) % size).y) / 2);
+
+            /*
+            Ray Casting Algorithm:
+                Checks how many edges the vector goes through. If that number is even, the vector
+                  must point outward. If that number is odd, the vector points inward. When the
+                  vector goes from outside to inside the polygon, it must go out again at some point.
+                  Thus, if it started pointing outside the polygon, it would go in then out of the
+                  polygon x times, yielding an even number of intersections. If the vector started
+                  pointing inside the polygon, it would go out of the polygon once and then in and
+                  out of the polygon x times, yielding an odd number of intersections.
+             */
+            Log.d("CalculationActivity", "Testing normal vector " + normalVector);
+            for (int j = 0; j < size; j++) {
+                // Don't check the edge the vector starts on
+                if (i != j && vectorIntersectsEdge(midPtOnEdge, normalVector, points.get(j), edgeVectors.get(j))) {
+                    // Vector intersects with edge j
+                    Log.d("CalculationActivity", "Intersects with edge " + j);
+                    intersections++;
+                }
+            }
+
+            if (intersections % 2 == 1) {
+                // Odd number of intersections -> vector points inward -> reverse normal vector
+                Log.d("CalculationActivity", "Vector pointed inward. Reversing it...");
+                normalVector.set(-edgeVectors.get(i).y, edgeVectors.get(i).x);
+            }
+
+            // Normalize the length of the vector
+            normalVector.set(amount * normalVector.x / normalVector.length(),
+                             amount * normalVector.y / normalVector.length());
+
+            // Add the outward-facing normal vector to the array
+            Log.d("CalculationActivity", "Normalized vector for edge " + i + ": " + normalVector);
+            normalVectors.add(normalVector);
+        }
+
+
+        // Move each edge out by amount
+        //   Move edge[i] by normalVectors[i] and edge[i-1] by normalVectors[i-1]
+        //   Calculate the amount of movement for point[i] (point between edges i and i-1)
+        for (int i = 0; i < size; i++) {
+            PointF curCorner = points.get(i);
+            PointF normalVector_nextEdge = normalVectors.get(i);
+            PointF normalVector_prevEdge = normalVectors.get((i - 1 + size) % size);
+
+            // Move the corner by each of the normal vectors (bump out each edge)
+            PointF newCornerForNextEdge = new PointF(curCorner.x + normalVector_nextEdge.x, curCorner.y + normalVector_nextEdge.y);
+            PointF newCornerForPrevEdge = new PointF(curCorner.x + normalVector_prevEdge.x, curCorner.y + normalVector_prevEdge.y);
+
+            // Intersect the bumped out edges to find the new corner point
+            Log.d("CalculationActivity", "Bumping out corner " + curCorner + " by " + normalVector_nextEdge + " and " + normalVector_prevEdge);
+            transformedPoints.add(intersectionOfLines(newCornerForNextEdge, edgeVectors.get(i), newCornerForPrevEdge, edgeVectors.get((i - 1 + size) % size)));
+        }
+
+        return transformedPoints;
+    }
+
+
+    // Note: Assumes that the lines actually intersect
+    private PointF intersectionOfLines(PointF line1Pt, PointF line1Slope, PointF line2Pt, PointF line2Slope) {
+        // Check if one line is vertical
+        if (line1Slope.x == 0) {
+            // line1 is vertical, line2 is not -> get y value of intersection
+
+            // Equation of line2: y = m*(x - line2Pt.x) + line2Pt.y
+            float y_intersection = (line2Slope.y / line2Slope.x) * (line1Pt.x - line2Pt.x) + line2Pt.y;
+
+            return new PointF(line1Pt.x, y_intersection);
+
+        } else if (line2Slope.x == 0) {
+            // line2 is vertical, line1 is not -> get y value of intersection
+
+            // Equation of line1: y = m * (x - line1Pt.x) + line1Pt.y
+            float y_intersection = (line1Slope.y / line1Slope.x) * (line2Pt.x - line1Pt.x) + line1Pt.y;
+
+            return new PointF(line2Pt.x, y_intersection);
+        }
+
+        // Else: Neither line is vertical
+
+        // Calculate the slope
+        float slope_line1 = line1Slope.y / line1Slope.x;
+        float slope_line2 = line2Slope.y / line2Slope.x;
+
+        // Lines intersect - find the intersection
+        // Note: Equation came from setting y=mx+b for each line equal and solving for x
+        float x_intersection = (slope_line2 * line2Pt.x - slope_line1 * line1Pt.x + line1Pt.y - line2Pt.y) / (slope_line2 - slope_line1);
+
+        // Get the y-value from equation of line1: y = m * (x - line1Pt.x) + line1Pt.y
+        float y_intersection = (line1Slope.y / line1Slope.x) * (x_intersection - line1Pt.x) + line1Pt.y;
+
+        return new PointF(x_intersection, y_intersection);
+    }
+
+
+    // Note: Checks if vector intersects edge including edgeStart but not edgeEnd
+    // Note: edgeEnd is assumed to be (edgeBegin + edgeSlope)
+    private boolean vectorIntersectsEdge(PointF vectorStart, PointF vectorSlope, PointF edgeStart, PointF edgeSlope) {
+        // Check if both lines are vertical/horizontal
+        if ((vectorSlope.x == 0 && edgeSlope.x == 0) || (vectorSlope.y == 0 && edgeSlope.y == 0)) {
+            return false;
+        }
+
+        // Check if one line is vertical
+        if (vectorSlope.x == 0) {
+            // vector is vertical, edge is not -> get y value of intersection
+            float edgeYMin = Math.min(edgeStart.y, edgeStart.y + edgeSlope.y);
+            float edgeYMax = Math.max(edgeStart.y, edgeStart.y + edgeSlope.y);
+
+            // Equation of edge line: y = m*(x - edgeStart.x) + edgeStart.y
+            float y_intersection = (edgeSlope.y / edgeSlope.x) * (vectorStart.x - edgeStart.x) + edgeStart.y;
+
+            return ((edgeYMin < y_intersection) && (y_intersection < edgeYMax)) || y_intersection == edgeStart.y;
+
+        } else if (edgeSlope.x == 0) {
+            // edge is vertical, vector is not -> get y value of intersection
+            float edgeYMin = Math.min(edgeStart.y, edgeStart.y + edgeSlope.y);
+            float edgeYMax = Math.max(edgeStart.y, edgeStart.y + edgeSlope.y);
+
+            // Equation of vector line: y = m * (x - vectorStart.x) + vectorStart.y
+            float y_intersection = (vectorSlope.y / vectorSlope.x) * (edgeStart.x - vectorStart.x) + vectorStart.y;
+
+            return ((edgeYMin < y_intersection) && (y_intersection < edgeYMax)) || y_intersection == edgeStart.y;
+        }
+
+        // Else: Neither line is horizontal/vertical
+
+        // Calculate the slope
+        float slope_Vector = vectorSlope.y / vectorSlope.x;
+        float slope_Edge = edgeSlope.y / edgeSlope.x;
+
+        if (slope_Vector == slope_Edge) {
+            // Lines are parallel - don't intersect
+            return false;
+        } else {
+            // Lines intersect - find the intersection
+            float edgeXMin = Math.min(edgeStart.x, edgeStart.x + edgeSlope.x);
+            float edgeXMax = Math.max(edgeStart.x, edgeStart.x + edgeSlope.x);
+
+            // Equation came from setting y=mx+b for each line equal and solving for x
+            float x_intersection = (slope_Edge * edgeStart.x - slope_Vector * vectorStart.x + vectorStart.y - edgeStart.y) / (slope_Edge - slope_Vector);
+
+            return ((edgeXMin < x_intersection) && (x_intersection < edgeXMax)) || x_intersection == edgeStart.x;
+        }
+    }
+
+
     final class workerThread implements Runnable {
         private ArrayList<PointF> points;
 
@@ -341,6 +512,11 @@ public class CalculationActivity extends AppCompatActivity {
 
             // Transform the points if ChArUco detection was successful
             if (transformedPoints != null) {
+                if (EXTEND_EDGES) {
+                    // Extend edges
+                    transformedPoints = extendEdges(transformedPoints, EXTEND_EDGES_AMOUNT);
+                }
+
                 transformedPoints = findCornerAndTransformPoints(transformedPoints, false);
             } else {
                 handler.post(new Runnable() {

@@ -36,7 +36,7 @@ public class BluetoothActivity extends AppCompatActivity {
 
     // Constants for Bluetooth information
     public static String DEVICE_UUID = "94f39d29-7d6d-437d-973b-fba39e49d4ee";
-    public static String DEVICE_NAME = "BEN-LAPTOP";
+    public static String DEVICE_NAME = "raspberrypi";
 
     // Constants for Message Protocol
     public static int MESSAGE_SIZE_BYTES = 4;
