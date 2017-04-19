@@ -97,8 +97,10 @@ public class Calibrate_Camera extends AppCompatActivity {
             }
             if(number_of_pics==1) {
                 findViewById(R.id.button_CalibrationAddPictures).setVisibility(View.VISIBLE);
-                findViewById(R.id.button_CalibrationFinish).setVisibility(View.VISIBLE);
                 findViewById(R.id.button_CalibrationTakePicture).setVisibility(View.GONE);
+            }
+            if(number_of_pics==5){
+                findViewById(R.id.button_CalibrationFinish).setVisibility(View.VISIBLE);
             }
     }
 
