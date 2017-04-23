@@ -49,6 +49,9 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -364,6 +367,13 @@ public class TakePictureActivity extends AppCompatActivity {
         // Get the dimensions of the View
         targetW = imageView.getWidth();
         targetH = imageView.getHeight();
+
+        // Undistort the image
+        Mat in = new Mat();
+        Utils.bitmapToMat(bitmap, in);
+        Mat out = new Mat();
+        GridDetectionUtils.undistort(in.getNativeObjAddr(), out.getNativeObjAddr());
+        Utils.matToBitmap(out, bitmap);
 
         // Put the rotated and scaled picture in the view (rotate picture to dominant view)
         rotate = rotateToDominant(rotate, photoH, photoW, targetH, targetW);
