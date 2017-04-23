@@ -1,5 +1,6 @@
 package edu.psu.armstrong1.gridmeasure;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -8,11 +9,16 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -101,7 +107,25 @@ public class ShowMeasurementActivity extends AppCompatActivity {
 
     // Called when the user clicks the Send Measurements button
     public void dispatchSendMeasurements(View view) {
-        // stub function to be filled in
+        // Write the points to a JSON string
+        String jsonString = null;
+        Log.d("ShowMeasurement", "Converting points to JSON");
+        OutputStream out = new ByteArrayOutputStream();
+
+        try {
+            jsonString = JsonUtils.convertPoints(polygonPoints);
+        } catch (IOException e) {
+            Toast.makeText(getApplicationContext(), R.string.error_ioExceptionConvertingPts, Toast.LENGTH_SHORT).show();
+            Log.e("ShowMeasurement", e.getMessage());
+            Log.e("ShowMeasurement", e.getStackTrace().toString());
+        }
+
+        if (jsonString != null) {
+            // Start BluetoothActivity
+            Intent intent = new Intent(view.getContext(), BluetoothActivity.class);
+            intent.putExtra(BluetoothActivity.STARTING_TEXT_INTENT_KEY, jsonString);
+            view.getContext().startActivity(intent);
+        }
     }
 
     private PointF convertPointToBitmapCoords(PointF tileCoord) {
