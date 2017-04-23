@@ -368,3 +368,33 @@ Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_stringFromJNI(
     std::string hello = "hello";
     return env->NewStringUTF(hello.c_str());
 }
+
+extern "C"
+void
+Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_drawAxis(
+        JNIEnv* env,
+        jobject /* this */,
+        jlong inMat,
+        jlong outMat) {
+
+    cv::Mat* pInMat = (cv::Mat*)inMat;
+    cv::Mat* pOutMat = (cv::Mat*)outMat;
+
+    cv::cvtColor(*pInMat, *pInMat, CV_BGRA2BGR);
+
+
+    *pOutMat = *pInMat;
+
+    //estimatePoseCharucoBoard
+    std::vector<cv::Point2f> charucoCorners;
+    std::vector<int> charucoIds;
+
+    // todo handle error
+    if (!findCharuco(*pInMat, getBoard(), charucoCorners, charucoIds)) return;
+
+    cv::Mat rvec,tvec;
+    // todo handle error
+    if (!cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, getBoard(), cameraMatrix, distCoeffs, rvec, tvec)) return;
+
+    cv::aruco::drawAxis(*pOutMat, cameraMatrix, distCoeffs, rvec, tvec, 5.0);
+}

@@ -373,6 +373,11 @@ public class TakePictureActivity extends AppCompatActivity {
         Utils.bitmapToMat(bitmap, in);
         Mat out = new Mat();
         GridDetectionUtils.undistort(in.getNativeObjAddr(), out.getNativeObjAddr());
+
+        // DEBUG: draw axis if you want. There's not really a point to this; it just looks cool.
+        //GridDetectionUtils.drawAxis(out.getNativeObjAddr(), out.getNativeObjAddr());
+
+        // Convert back to bitmap.
         Utils.matToBitmap(out, bitmap);
 
         // Put the rotated and scaled picture in the view (rotate picture to dominant view)
