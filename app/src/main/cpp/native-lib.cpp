@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <iterator>
+#include <fstream>
 #include "opencv2/aruco/charuco.hpp"
 #include "opencv2/aruco/dictionary.hpp"
 #include "opencv2/imgproc.hpp"
@@ -12,12 +13,110 @@ cv::Mat cameraMatrix, distCoeffs;
 std::vector<cv::Mat> rvecs, tvecs;
 double repError;
 
+std::string fileStoragePath;
+
 bool calibrated = false;
 
 // TODO Still not the best way to do this, but better.
 const cv::Ptr<cv::aruco::CharucoBoard> getBoard() {
     const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
     return cv::aruco::CharucoBoard::create(5, 7, 1.0f, 0.5f, dictionary);
+}
+
+/**
+ * http://stackoverflow.com/questions/41201641/write-a-vector-of-cvmat-to-binary-file-in-c
+ */
+void vecmatwrite(const std::string& filename, const std::vector<cv::Mat>& matrices)
+{
+    std::ofstream fs(filename, std::fstream::binary);
+
+    for (size_t i = 0; i < matrices.size(); ++i)
+    {
+        const cv::Mat& mat = matrices[i];
+
+        // Header
+        int type = mat.type();
+        int channels = mat.channels();
+        fs.write((char*)&mat.rows, sizeof(int));    // rows
+        fs.write((char*)&mat.cols, sizeof(int));    // cols
+        fs.write((char*)&type, sizeof(int));        // type
+        fs.write((char*)&channels, sizeof(int));    // channels
+
+        // Data
+        if (mat.isContinuous())
+        {
+            fs.write(mat.ptr<char>(0), (mat.dataend - mat.datastart));
+        }
+        else
+        {
+            int rowsz = CV_ELEM_SIZE(type) * mat.cols;
+            for (int r = 0; r < mat.rows; ++r)
+            {
+                fs.write(mat.ptr<char>(r), rowsz);
+            }
+        }
+    }
+}
+
+/**
+ * http://stackoverflow.com/questions/41201641/write-a-vector-of-cvmat-to-binary-file-in-c
+ */
+std::vector<cv::Mat> vecmatread(const std::string& filename)
+{
+    std::vector<cv::Mat> matrices;
+    std::ifstream fs(filename, std::fstream::binary);
+
+    // Get length of file
+    fs.seekg(0, fs.end);
+    int length = fs.tellg();
+    fs.seekg(0, fs.beg);
+
+    while (fs.tellg() < length)
+    {
+        // Header
+        int rows, cols, type, channels;
+        fs.read((char*)&rows, sizeof(int));         // rows
+        fs.read((char*)&cols, sizeof(int));         // cols
+        fs.read((char*)&type, sizeof(int));         // type
+        fs.read((char*)&channels, sizeof(int));     // channels
+
+        // Data
+        cv::Mat mat(rows, cols, type);
+        fs.read((char*)mat.data, CV_ELEM_SIZE(type) * rows * cols);
+
+        matrices.push_back(mat);
+    }
+    return matrices;
+}
+
+bool fileExists(std::string filename)
+{
+    std::ifstream file(filename);
+    return file.good();
+}
+
+extern "C"
+void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_init(
+    JNIEnv* env,
+    jobject,
+    jstring fileStoragePathJstring)
+{
+
+    fileStoragePath = std::string(env->GetStringUTFChars(fileStoragePathJstring, JNI_FALSE)) + "/";
+
+    if(fileExists(fileStoragePath + "calibration.xml")) {
+        cv::FileStorage::FileStorage calibrationFile(fileStoragePath + "calibration.xml", cv::FileStorage::READ);
+        calibrationFile["cameraMatrix"] >> cameraMatrix;
+        calibrationFile["distCoeffs"] >> distCoeffs;
+    }
+
+    if(fileExists(fileStoragePath + "rvecs.bin")) {
+        rvecs = vecmatread(fileStoragePath + "rvecs.bin");
+    }
+
+    if(fileExists(fileStoragePath + "tvecs.bin")) {
+        tvecs = vecmatread(fileStoragePath + "tvecs.bin");
+    }
 }
 
 /**
@@ -94,6 +193,13 @@ bool calibrateWithCharuco(
 
     int calibrationFlags = 0;
     repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
+
+    // Save params.
+    cv::FileStorage::FileStorage calibrationFile(fileStoragePath + "calibration.xml", cv::FileStorage::WRITE);
+    calibrationFile << "cameraMatrix" << cameraMatrix << "distCoeffs" << distCoeffs;
+    calibrationFile.release();
+    vecmatwrite(fileStoragePath + "rvecs.bin", rvecs);
+    vecmatwrite(fileStoragePath + "tvecs.bin", tvecs);
 
     // Mark as calibrated
     calibrated = true;
