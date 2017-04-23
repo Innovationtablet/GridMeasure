@@ -10,7 +10,6 @@
 #include "opencv2/calib3d.hpp"
 
 cv::Mat cameraMatrix, distCoeffs;
-std::vector<cv::Mat> rvecs, tvecs;
 double repError;
 
 std::string fileStoragePath;
@@ -113,14 +112,6 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_init(
         calibrationFile["cameraMatrix"] >> cameraMatrix;
         calibrationFile["distCoeffs"] >> distCoeffs;
     }
-
-    if(fileExists(fileStoragePath + "rvecs.bin")) {
-        rvecs = vecmatread(fileStoragePath + "rvecs.bin");
-    }
-
-    if(fileExists(fileStoragePath + "tvecs.bin")) {
-        tvecs = vecmatread(fileStoragePath + "tvecs.bin");
-    }
 }
 
 /**
@@ -196,14 +187,13 @@ bool calibrateWithCharuco(
 
 
     int calibrationFlags = 0;
-    repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
+    std::vector<cv::Mat> rvecs_unused, tvecs_unused;
+    repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs_unused, tvecs_unused, calibrationFlags);
 
     // Save params.
     cv::FileStorage::FileStorage calibrationFile(fileStoragePath + "calibration.xml", cv::FileStorage::WRITE);
     calibrationFile << "cameraMatrix" << cameraMatrix << "distCoeffs" << distCoeffs;
     calibrationFile.release();
-    vecmatwrite(fileStoragePath + "rvecs.bin", rvecs);
-    vecmatwrite(fileStoragePath + "tvecs.bin", tvecs);
 
     // Mark as calibrated
     calibrated = true;
