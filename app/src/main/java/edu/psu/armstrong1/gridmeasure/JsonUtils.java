@@ -9,27 +9,30 @@ import android.util.JsonWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.util.List;
 
 class JsonUtils {
 
-    public static void ConvertPoints(OutputStream out, List<PointF> points) throws IOException{
-        JsonWriter writer = new JsonWriter(new OutputStreamWriter(out, "UTF-8"));
+    public static String convertPoints(List<PointF> points) throws IOException{
+        StringWriter sb = new StringWriter();
+        JsonWriter writer = new JsonWriter(sb);
+
         writer.beginObject();
         writer.name("perimeter");
 
-        //writer.beginObject();
-        //writer.name("points");
         writer.beginArray();
-
-        for(PointF TempPoint: points){
-            writer.name("x").value(TempPoint.x);
-            writer.name("y").value(TempPoint.y);
+        for (PointF point : points) {
+            writer.beginObject();
+            writer.name("x").value(point.x);
+            writer.name("y").value(point.y);
+            writer.endObject();
         }
-
         writer.endArray();
-        //writer.endObject();
+
         writer.endObject();
+
+        return sb.toString();
     }
 
 }
