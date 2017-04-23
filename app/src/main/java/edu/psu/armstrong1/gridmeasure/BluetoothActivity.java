@@ -33,6 +33,7 @@ import java.util.UUID;
 public class BluetoothActivity extends AppCompatActivity {
     // Constants
     public static int START_BLUETOOTH_CODE = 1;
+    public static String STARTING_TEXT_INTENT_KEY = "STARTING_TEXT";
 
     // Constants for Bluetooth information
     public static String DEVICE_UUID = "94f39d29-7d6d-437d-973b-fba39e49d4ee";
@@ -52,7 +53,7 @@ public class BluetoothActivity extends AppCompatActivity {
     // Variables for interacting with the GUI
     private Handler handler;
     private TextView textView;
-    private EditText enteredText;
+    private TextView enteredText;
     private Spinner spinner;
 
     // Variables for data transfer
@@ -68,7 +69,6 @@ public class BluetoothActivity extends AppCompatActivity {
 
         // Get the required views
         textView = (TextView) findViewById(R.id.bluetooth_receivedDataTextView);
-        enteredText = (EditText) findViewById(R.id.bluetooth_sendDataTextView);
         spinner = (Spinner) findViewById(R.id.bluetooth_spinner);
 
         // Get the bluetooth adapter
@@ -87,6 +87,22 @@ public class BluetoothActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), R.string.error_noBluetooth, Toast.LENGTH_LONG).show();
             ((Button) findViewById(R.id.button_bluetooth_sendData)).setClickable(false);
             ((ImageButton) findViewById(R.id.button_bluetooth_updateBluetooth)).setClickable(false);
+        }
+
+        // Check for starting text in the intent
+        if (getIntent().hasExtra(STARTING_TEXT_INTENT_KEY)) {
+            // Get the TextView and hide the EditText view
+            enteredText = (TextView) findViewById(R.id.bluetooth_sendDataTextView);
+            findViewById(R.id.bluetooth_sendDataEditText).setVisibility(View.GONE);
+
+            // Set the starting text
+            String startingText = getIntent().getExtras().getString(STARTING_TEXT_INTENT_KEY, "");
+            enteredText.setText(startingText);
+        } else {
+            // Get the EditText view and hide the TextView
+            enteredText = (EditText) findViewById(R.id.bluetooth_sendDataEditText);
+            findViewById(R.id.bluetooth_sendDataTextView).setVisibility(View.GONE);
+            findViewById(R.id.bluetooth_sendDataScrollView).setVisibility(View.GONE);
         }
     }
 

@@ -41,7 +41,7 @@
     </LinearLayout>
 
     <EditText
-        android:id="@+id/bluetooth_sendDataTextView"
+        android:id="@+id/bluetooth_sendDataEditText"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -51,6 +51,25 @@
         android:scrollbars="vertical"
         android:scrollbarAlwaysDrawVerticalTrack="true"
         android:fadeScrollbars="false"/>
+
+
+    <ScrollView
+        android:id="@+id/bluetooth_sendDataScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="vertical"
+        android:fillViewport="true"
+        android:scrollbarAlwaysDrawVerticalTrack="true"
+        android:fadeScrollbars="false"
+        android:paddingTop="5dp">
+        <TextView
+            android:id="@+id/bluetooth_sendDataTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/bluetooth_sendDataTextHint"
+            android:layout_gravity="center"/>
+    </ScrollView>
 
 
     <Button
@@ -70,7 +89,7 @@
         android:textIsSelectable="false" />
 
     <ScrollView
-        android:id="@+id/bluetooth_scrollView"
+        android:id="@+id/bluetooth_receivedDataScrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"

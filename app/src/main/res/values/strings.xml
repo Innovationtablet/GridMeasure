@@ -28,7 +28,6 @@
     <!--TakePictureActivity Popup menu options-->
     <string name="takePicture_popupMenu_deletePoint">Delete Point</string>
     <string name="takePicture_popupMenu_addPoint">Add another Point</string>
-    <string name="takePicture_popupMenu_dpad">Show Directional-Pad</string>
     <string name="takePicture_popupMenu_cancel">Cancel</string>
 
 
@@ -68,4 +67,5 @@
     <string name="error_noAcceptableTransformation">The shape you outlined could not be rotated successfully</string>
     <string name="error_charucoFailed">No ChArUco board was detected.\nPlease try again</string>
     <string name="error_transformFailed">The outlined shaped doesn\'t seem to be valid.\nPlease try again</string>
+    <string name="error_ioExceptionConvertingPts">There was an IO Exception converting the points</string>
 </resources>
