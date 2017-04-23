@@ -18,6 +18,10 @@ std::string fileStoragePath;
 bool calibrated = false;
 
 // TODO Still not the best way to do this, but better.
+// We should probably allow the charuco card to be configured on the Java end - but right now it's
+// unimportant - we're just hard-coding the charuco card using this function.
+// It may be overkill anyway to allow configuration of charuco card on the Java end - what practical
+// use does that have?
 const cv::Ptr<cv::aruco::CharucoBoard> getBoard() {
     const cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_7X7_1000);
     return cv::aruco::CharucoBoard::create(5, 7, 1.0f, 0.5f, dictionary);
