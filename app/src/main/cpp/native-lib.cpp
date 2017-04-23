@@ -114,6 +114,20 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_init(
     }
 }
 
+
+extern "C"
+void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_undistort(
+        JNIEnv* env,
+        jobject /* this */,
+        jlong inMat,
+        jlong outMat) {
+
+    cv::Mat* pInMat = (cv::Mat*)inMat;
+    cv::Mat* pOutMat = (cv::Mat*)outMat;
+
+    cv::undistort(*pInMat, *pOutMat, cameraMatrix, distCoeffs);
+}
+
 /**
  *
  */
