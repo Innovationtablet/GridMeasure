@@ -432,11 +432,6 @@ public class PolygonView extends FrameLayout {
                     // Remove the current point
                     removePoint(pointPosition, true);
                     break;
-                case R.id.circlePopup_dpad:
-                    // Show the dpad
-                    dpadPointer = pointPosition;
-                    showDpad(dpadPointer);
-                    break;
                 default:
                     // No action
                     break;
@@ -458,6 +453,7 @@ public class PolygonView extends FrameLayout {
             View v = pointers.get(id);
             pointers.remove(id);
             removeView(v);
+            hideDpad();
         }
     }
 
@@ -486,6 +482,9 @@ public class PolygonView extends FrameLayout {
         ImageView newView = getImageView(newX, newY);
         pointers.add(id + 1, newView);
         addView(newView);
+
+        // Show dpad
+        showDpad(id + 1);
     }
 
     private void addPointAfter (View point) {
@@ -508,20 +507,23 @@ public class PolygonView extends FrameLayout {
 
 
     private void showDpad(int pointId) {
-        // Get the dpad's width
-        dpadDimension = dpad.getWidth();
+        if (pointId >= 0 && pointId < pointers.size()) {
+            // Get the dpad's width
+            dpadDimension = dpad.getWidth();
 
-        // Calculate the x and y coordinates
-        dpad.setX(pointers.get(pointId).getX() + ((circleDiameter - dpadDimension) / 2));
-        dpad.setY(pointers.get(pointId).getY() + ((circleDiameter - dpadDimension) / 2));
+            // Calculate the x and y coordinates
+            dpad.setX(pointers.get(pointId).getX() + ((circleDiameter - dpadDimension) / 2));
+            dpad.setY(pointers.get(pointId).getY() + ((circleDiameter - dpadDimension) / 2));
 
-        // Show the dpad
-        Log.d("PolygonView", "Show Dpad");
-        dpad.setVisibility(View.VISIBLE);
-        dpadShowing = true;
+            // Show the dpad
+            Log.d("PolygonView", "Show Dpad");
+            dpad.setVisibility(View.VISIBLE);
+            dpadShowing = true;
+            dpadPointer = pointId;
 
-        // Turn on zooming
-        zoomDpad();
+            // Turn on zooming
+            zoomDpad();
+        }
     }
 
     private void hideDpad() {
@@ -592,10 +594,7 @@ public class PolygonView extends FrameLayout {
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                if (!dpadShowing) {
-                    // Stop zooming as long as the dpad isn't showing
-                    ((TakePictureActivity) context).stopZooming();
-                }
+                showDpad(pointers.indexOf(view));
                 break;
 
             default:
@@ -606,6 +605,6 @@ public class PolygonView extends FrameLayout {
     private void zoomOnPoint (int index) {
         // Zoom in on center of circle
         ImageView view = pointers.get(index);
-        ((TakePictureActivity) context).zoomLocation(view.getX() + view.getWidth() / 2, view.getY() + view.getHeight() / 2, false);
+        ((TakePictureActivity) context).zoomLocation(view.getX() + circleDiameter / 2, view.getY() + circleDiameter / 2, false);
     }
 }
