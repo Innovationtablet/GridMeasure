@@ -156,6 +156,9 @@ public class Calibrate_Camera extends AppCompatActivity {
     public void callChuruco(View view){
         String[] fileNames2 = fileNames.toArray(new String[fileNames.size()]);
         GridDetectionUtils.calibrateWithCharuco(fileNames2);
+        //go back to main page
+        Intent intent = new Intent(view.getContext(), MainActivity.class);
+        view.getContext().startActivity(intent);
     }
 
     private File createImageFile(View view) throws IOException {
