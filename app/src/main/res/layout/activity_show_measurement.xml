@@ -25,6 +25,32 @@
         android:layout_weight="1"
         android:paddingTop="@dimen/navigation_padding_bottom" />
 
+
+    <LinearLayout
+        android:id="@+id/showMeasurement_edgeExtensionBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+
+        <EditText
+            android:id="@+id/showMeasurement_edgeExtensionAmount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ems="10"
+            android:inputType="numberDecimal"/>
+
+        <Button
+            android:id="@+id/button_extendEdges"
+            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="2"
+            android:text="@string/button_showMeasurement_extendEdges"
+            android:onClick="extendEdges"/>
+
+    </LinearLayout>
+
     <LinearLayout
         android:id="@+id/showMeasurement_bottomButtons"
         android:layout_width="match_parent"

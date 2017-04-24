@@ -23,6 +23,7 @@
 
     <!--SendMeasurementActivity screen-->
     <string name="button_showMeasurement_sendToCutter">Send measurements to cutter</string>
+    <string name="button_showMeasurement_extendEdges">Extend edges (inches)</string>
 
 
     <!--TakePictureActivity Popup menu options-->
