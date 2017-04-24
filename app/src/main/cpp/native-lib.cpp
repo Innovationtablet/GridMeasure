@@ -111,6 +111,9 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_init(
         cv::FileStorage::FileStorage calibrationFile(fileStoragePath + "calibration.xml", cv::FileStorage::READ);
         calibrationFile["cameraMatrix"] >> cameraMatrix;
         calibrationFile["distCoeffs"] >> distCoeffs;
+    } else {
+        cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+        distCoeffs = cv::Mat::zeros(8, 1, CV_64F);  // todo is this right?
     }
 }
 
@@ -226,12 +229,6 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
     jobject imageJobject,
     jfloatArray outlinePointsJfloatArray)
 {
-    if (!calibrated)
-    {
-        cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
-        distCoeffs = cv::Mat::zeros(8, 1, CV_64F);  // todo is this right?
-    }
-
     jfloatArray err = env->NewFloatArray(0);
 
     jclass matclass = env->FindClass("org/opencv/core/Mat");
@@ -260,7 +257,7 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
     // Todo - should we check that the length of the array is even?
     for (int i = 0; i < env->GetArrayLength(outlinePointsJfloatArray); i += 2)
     {
-        cv::Point2f worldPoint = imagePointToWorldPoint(cv::Point2f(cv::Point2f(jfloatArr[i], jfloatArr[i+1])), rvec, tvec);
+        cv::Point2f worldPoint = imagePointToWorldPoint(cv::Point2f(cv::Point2f(jfloatArr[i], jfloatArr[i+1])), rvec, tvec); // todo: why is it constructing a Point2f twice
         outPoints[i] = worldPoint.x;
         outPoints[i+1] = worldPoint.y;
     }
