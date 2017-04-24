@@ -36,7 +36,7 @@ public class BluetoothActivity extends AppCompatActivity {
     public static String STARTING_TEXT_INTENT_KEY = "STARTING_TEXT";
 
     // Constants for Bluetooth information
-    public static String DEVICE_UUID = "94f39d29-7d6d-437d-973b-fba39e49d4ee";
+    public static String DEVICE_UUID = "94f39d29-7d6d-437d-973b-fba39e49d4ee";  // Must match UUID server is using
     public static String DEVICE_NAME = "raspberrypi";
 
     // Constants for Message Protocol
@@ -65,6 +65,7 @@ public class BluetoothActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth);
 
+        // Create Handler to communicate between worker (background) thread and UI thread
         handler = new Handler();
 
         // Get the required views
@@ -106,16 +107,6 @@ public class BluetoothActivity extends AppCompatActivity {
         }
     }
 
-
-    @Override
-    public void onWindowFocusChanged (boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-
-       if (bluetoothDevice == null) {
-           Log.i("BluetoothActivity", "Device \"" + DEVICE_NAME + "\" not found");
-       }
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Check which request we're responding to
@@ -132,6 +123,7 @@ public class BluetoothActivity extends AppCompatActivity {
             dataTransferThread.cancel();
         }
 
+        // Get the selected device from the spinner
         if (devicesFound != null && devicesFound.size() > 0) {
             bluetoothDevice = pairedDevices.get(spinner.getSelectedItemPosition());
         }
@@ -145,6 +137,7 @@ public class BluetoothActivity extends AppCompatActivity {
             // Bluetooth is off
             turnOnBluetooth();
         } else {
+            // No device selected
             Toast.makeText(getApplicationContext(), R.string.warn_bluetooth_noPairedDeviceSelected, Toast.LENGTH_LONG).show();
         }
     }
@@ -165,9 +158,9 @@ public class BluetoothActivity extends AppCompatActivity {
     }
 
 
-    public boolean sendBtMsg(String msg2send){
+    public boolean sendBtMsg(String msgToSend){
         // Make sure to send a valid message
-        if (msg2send.length() >= 0) {
+        if (msgToSend.length() >= 0) {
             UUID uuid = UUID.fromString(DEVICE_UUID);
             try {
                 // Create a socket and connect
@@ -177,7 +170,7 @@ public class BluetoothActivity extends AppCompatActivity {
                 }
 
                 // Get the message bytes and their length
-                byte[] msgBytes = msg2send.getBytes();
+                byte[] msgBytes = msgToSend.getBytes();
                 final int msgLength = msgBytes.length;
                 int totalLength = msgLength + MESSAGE_SIZE_BYTES;
 
@@ -195,7 +188,7 @@ public class BluetoothActivity extends AppCompatActivity {
                 // Create a byte buffer to hold the message length and the message
                 ByteBuffer buff = ByteBuffer.allocate(totalLength);
 
-                // Put the message length into the buffer
+                // Put the message length into the buffer (byte-by-byte)
                 for (int i = 1; i <= MESSAGE_SIZE_BYTES; i++) {
                     byte putByte;
                     if ((MESSAGE_SIZE_BYTES - i) * 8 >= Integer.SIZE) {
@@ -204,6 +197,7 @@ public class BluetoothActivity extends AppCompatActivity {
 
                         putByte = (byte) 0;
                     } else {
+                        // Get the next byte of msgLength
                         putByte = (byte) (msgLength >> ((MESSAGE_SIZE_BYTES - i) * 8));
                     }
 
@@ -221,8 +215,10 @@ public class BluetoothActivity extends AppCompatActivity {
                 e.printStackTrace();
                 return false;
             }
+
             return true;
         } else {
+            // Empty message
             handler.post(new Runnable() {
                 public void run() {
                     Toast.makeText(getApplicationContext(), R.string.warn_bluetooth_emptyMessage, Toast.LENGTH_LONG).show();
@@ -236,11 +232,11 @@ public class BluetoothActivity extends AppCompatActivity {
     private void populateSpinner() {
         // Make sure bluetooth is available
         if (bluetoothAdapter != null) {
-
             // Loop through the devices found
             pairedDevices = new ArrayList<BluetoothDevice>(bluetoothAdapter.getBondedDevices());
             devicesFound = new ArrayList<String>();
             if (pairedDevices.size() > 0) {
+                // Add each device to the spinner
                 for (BluetoothDevice device : pairedDevices) {
                     Log.i("BluetoothActivity", "Found device: " + device.getName());
 
@@ -257,6 +253,11 @@ public class BluetoothActivity extends AppCompatActivity {
                 }
             }
 
+            // Log message if default device not found
+            if (bluetoothDevice == null) {
+                Log.i("BluetoothActivity", "Device \"" + DEVICE_NAME + "\" not found");
+            }
+
             // Create the array adapter for the spinner
             ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_spinner_item, devicesFound);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -267,6 +268,7 @@ public class BluetoothActivity extends AppCompatActivity {
         }
     }
 
+
     final class workerThread implements Runnable {
 
         private String btMsg;
@@ -276,25 +278,27 @@ public class BluetoothActivity extends AppCompatActivity {
             btMsg = msg;
         }
 
+        // Stops run method (i.e., kills the thread)
         public void cancel(){
             keepRunning = false;
         }
 
         public void run()
         {
-            byte[] messageSizePacket = new byte[MESSAGE_SIZE_BYTES];
-            byte[] packetBytes;
-            int bytesLeft = MESSAGE_SIZE_BYTES;
-            int bytesAvailable;
-            boolean knowMsgLength = false;
+            byte[] messageSizePacket = new byte[MESSAGE_SIZE_BYTES];    // bytes for message header
+            byte[] packetBytes;                                         // bytes for msg
+            int bytesLeft = MESSAGE_SIZE_BYTES;                         // number of bytes to wait for
+            int bytesAvailable;                                         // number of bytes on inputStream
+            boolean knowMsgLength = false;                              // flag for whether message header already received
 
             Log.i("BluetoothWorker", "Sending message to " + bluetoothDevice.getName());
 
             // Send the message and wait for a response if successful
             if (sendBtMsg(btMsg)) {
+                // Message sent successfully
                 Log.i("BluetoothWorker", "Message sent successfully. Waiting for a response.");
 
-                // Get a response
+                // Get a response (keep waiting for one as long as BluetoothActivity is active and cancel() wasn't called)
                 while (!Thread.currentThread().isInterrupted() && keepRunning) {
                     try {
                         // Try to read from the input stream
@@ -307,7 +311,7 @@ public class BluetoothActivity extends AppCompatActivity {
 
                             // Check if we have already gotten the message header
                             if (!knowMsgLength) {
-                                // First - get the message length from the message header
+                                // First Step - get the message length from the message header
                                 inputStream.read(messageSizePacket);
 
                                 // Get the length of the message
@@ -315,8 +319,8 @@ public class BluetoothActivity extends AppCompatActivity {
                                 knowMsgLength = true;
                                 Log.i("BluetoothWorkerThread", "Expecting message of length " + bytesLeft);
                             } else {
-                                // Second - Get the message (already have header)
-                                packetBytes = new byte[bytesAvailable];
+                                // Second Step - Get the message (already have header)
+                                packetBytes = new byte[bytesLeft];
                                 inputStream.read(packetBytes);
 
                                 // Convert message to a string

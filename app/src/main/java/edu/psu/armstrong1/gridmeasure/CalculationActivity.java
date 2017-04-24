@@ -20,9 +20,9 @@ public class CalculationActivity extends AppCompatActivity {
     // Constants
     public static final float CUTTER_MAX_X = 24;                    // max width of the tile cutter
     public static final float CUTTER_MAX_Y = 24;                    // max height of the tile cutter
-    public final float EXTEND_EDGES_AMOUNT = (float) 0.25;          // default amount to extend the tile's edges (inches)
-    public final boolean EXTEND_EDGES = false;                      // whether or not to extend the tile's edges
+    public static final float EXTEND_EDGES_AMOUNT = (float) 0.25;   // default amount to extend the tile's edges (inches)
     private static final String THREAD_KEY = "WORKER_THREAD";       // key to savedInstanceBundle for workerThreadMade
+    public static String EXTENDED_PTS_INTENT_KEY = "EXTENDED";      // key to the intent for the polygon points after extending edges
 
     // Variables
     String currentPhotoPath = null;                             // path to last picture taken
@@ -30,6 +30,8 @@ public class CalculationActivity extends AppCompatActivity {
     Context appContext = null;                                  // the application context (used if this is used as a class not an activity)
     boolean workerThreadMade = false;                           // whether the worker thread to do the calculations has been made yet
     private Handler handler;                                    // Handler used to communicate with the UI thread from the worker thread
+    int cornerUsed, orderUsed;                                  // the transform variables used to successfully transform the points
+    boolean alignYUsed;
 
     // Constructor for when using this as an activity
     public CalculationActivity() {
@@ -46,9 +48,17 @@ public class CalculationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_calculation);
 
-        // Get the bitmap and points
-        currentPhotoPath = getIntent().getStringExtra(TakePictureActivity.PHOTO_PATH_INTENT_KEY);
-        polygonPoints = (ArrayList<PointF>) getIntent().getExtras().get(TakePictureActivity.POINTS_INTENT_KEY);
+
+        // Get the value of workerThreadMade from the saved bundle if there is one
+        if (savedInstanceState != null) {
+            workerThreadMade = savedInstanceState.getBoolean(THREAD_KEY, false);
+            currentPhotoPath = savedInstanceState.getString(TakePictureActivity.PHOTO_PATH_INTENT_KEY);
+            polygonPoints = (ArrayList<PointF>) savedInstanceState.getSerializable(TakePictureActivity.POINTS_INTENT_KEY);
+        } else {
+            // Get the bitmap and points from the intent
+            currentPhotoPath = getIntent().getStringExtra(TakePictureActivity.PHOTO_PATH_INTENT_KEY);
+            polygonPoints = (ArrayList<PointF>) getIntent().getExtras().get(TakePictureActivity.POINTS_INTENT_KEY);
+        }
 
         // Only create a worker thread if one hasn't been made yet
         if (!workerThreadMade) {
@@ -57,6 +67,8 @@ public class CalculationActivity extends AppCompatActivity {
             handler = new Handler();
             workerThreadMade = true;
         }
+
+        appContext = getApplicationContext();
     }
 
 
@@ -68,15 +80,6 @@ public class CalculationActivity extends AppCompatActivity {
         savedInstanceState.putBoolean(THREAD_KEY, workerThreadMade);
 
         super.onSaveInstanceState(savedInstanceState);
-    }
-
-    @Override
-    public void onRestoreInstanceState(Bundle savedInstanceState) {
-        // Restore state info and photo path
-        super.onRestoreInstanceState(savedInstanceState);
-        currentPhotoPath = savedInstanceState.getString(TakePictureActivity.PHOTO_PATH_INTENT_KEY);
-        polygonPoints = (ArrayList<PointF>) savedInstanceState.getSerializable(TakePictureActivity.POINTS_INTENT_KEY);
-        workerThreadMade = savedInstanceState.getBoolean(THREAD_KEY);
     }
 
 
@@ -98,15 +101,15 @@ public class CalculationActivity extends AppCompatActivity {
 
     public ArrayList<Integer> findCorners(ArrayList<PointF> points, boolean findAll) {
         ArrayList<Integer> retCorners = new ArrayList<>();          // array to hold acceptable corners
-        ArrayList<Integer> corners90Deg = new ArrayList<>();        // array to hold possible corner that are 90 degrees
+        ArrayList<Integer> corners90Deg = new ArrayList<>();        // array to hold possible corners that are 90 degrees
         TreeMap<Float, Integer> cornersAcute = new TreeMap<>();     // map to hold possible corners that are acute (in order by the dot product)
 
         // Variables used for computation
-        float dotProd;
-        int size = points.size();
-        boolean noCornerFound = true;
-        int curCorner;
-        PointF corner = null;
+        float dotProd;                          // result of a dot product
+        int size = points.size();               // size of the points list
+        boolean noCornerFound = true;           // flag denoting whether a corner was found
+        int curCorner;                          // index into points of the current corner being examined
+        PointF corner = null;                   // current corner being examined
 
         // Find acute and 90-degree angles
         for (int i = 0; i < size; i++) {
@@ -125,9 +128,10 @@ public class CalculationActivity extends AppCompatActivity {
                 cornersAcute.put(dotProd, (i + 1) % size);
                 Log.d("CalculationActivity", "  Found acute angle");
             }
+            // Else obtuse angle - not acceptable corner
         }
 
-        // Check whether corners are acceptable corners
+        // Check whether "corners" are acceptable corners
         //   (If the corner were (0,0), can all other points fit in the first quadrant?)
         // Loop until we're out of corners to test if we're finding all corners, or until we find a corner/rule out all possible corners
         while ((noCornerFound || findAll) && (!corners90Deg.isEmpty() || !cornersAcute.isEmpty())) {
@@ -194,9 +198,10 @@ public class CalculationActivity extends AppCompatActivity {
 
     // Rotates and translates points so that points[cornerIndex] is at (0,0) and all points
     //   are in the TR quadrant (positive x and y values)
-    // Note: order should be +- 1 to decide which way to index into points (increasing or decreasing)
+    // Note: order should be +- 1 to decide which way to index into points (increasing or decreasing) for CW order
     public ArrayList<PointF> transformPoints(ArrayList<PointF> points, int cornerIndex, int order,
-                                             boolean alignYAxis, boolean checkCutterBoundary) {
+                                             boolean alignYAxis, boolean checkCutterBoundary, boolean checkTRQuadrant) {
+
         float roundingConst = 10000;                            // rounding factor [keep log(roundingConst) decimal places]
                                                                 //   used to avoid extremely small negative numbers that should be rounded to 0
         ArrayList<PointF> transformedPts = new ArrayList<>();
@@ -239,11 +244,11 @@ public class CalculationActivity extends AppCompatActivity {
             // Calculate the new points
             // Derived from: https://www.cs.mtu.edu/~shene/COURSES/cs3621/NOTES/geometry/geo-tran.html
             // Note: This is translating then rotating the points
-            float xNew = (float) (Math.round((cosA * x - sinA * y + h * cosA - k * sinA) * roundingConst) / roundingConst);
-            float yNew = (float) (Math.round((sinA * x + cosA * y + h * sinA + k * cosA) * roundingConst) / roundingConst);
+            float xNew = Math.round((cosA * x - sinA * y + h * cosA - k * sinA) * roundingConst) / roundingConst;
+            float yNew = Math.round((sinA * x + cosA * y + h * sinA + k * cosA) * roundingConst) / roundingConst;
 
             // Make sure new point is valid
-            if (xNew < 0 || yNew < 0) {
+            if (checkTRQuadrant && (xNew < 0 || yNew < 0)) {
                 // Invalid point (not in TR quadrant) - stop computing points
                 Log.w("CalculationActivity", "Transformation yields point not in TR quadrant: (" + xNew + ", " + yNew + ")");
                 return null;
@@ -260,10 +265,13 @@ public class CalculationActivity extends AppCompatActivity {
         return transformedPts;
     }
 
+    // Note: alignInputOutputArrays denotes whether PointF's at the same indices of input and output are matching points
     public ArrayList<PointF> findCornerAndTransformPoints(ArrayList<PointF> points, boolean checkCutterBoundary) {
         ArrayList<PointF> transformedPts = null;
+        int order = 1;      // assume CW order (at first)
+
+        // Find acceptable corners
         ArrayList<Integer> corners = findCorners(points, true);
-        int cornerIndex;
 
         // Make sure a corner was found
         if (corners == null) {
@@ -273,32 +281,38 @@ public class CalculationActivity extends AppCompatActivity {
         }
 
         // Try to rotate points into the TR quadrant based on a corner
+        int cornerIndex = 0;
+        boolean alignY = true;
         while (!corners.isEmpty() && transformedPts == null) {
-            // Take the first corner
+            // Take the first corner and try to transform the points
             cornerIndex = corners.get(0);
             corners.remove(0);
 
             // Try to transform points with CW order being increasing index, align y-axis
             Log.d("CalculationActivity", "Assuming increasing index is CW order. Rotating/translating shape...");
-            transformedPts = transformPoints(points, cornerIndex, 1, true, checkCutterBoundary);
+            transformedPts = transformPoints(points, cornerIndex, order, alignY, checkCutterBoundary, true);
 
             // Check if transform was successful
             if (transformedPts == null) {
                 // Transform not successful - try aligning x-axis
-                transformedPts = transformPoints(points, cornerIndex, 1, false, checkCutterBoundary);
+                alignY = false;
+                transformedPts = transformPoints(points, cornerIndex, order, alignY, checkCutterBoundary, true);
             }
 
             // Check if transform was successful
             if (transformedPts == null) {
                 // Transform not successful - try CW order being decreasing index
                 Log.d("CalculationActivity", "Assuming decreasing index is CW order. Rotating/translating shape...");
-                transformedPts = transformPoints(points, cornerIndex, -1, true, checkCutterBoundary);
+                order = -1;
+                alignY = true;
+                transformedPts = transformPoints(points, cornerIndex, order, alignY, checkCutterBoundary, true);
             }
 
             // Check if transform was successful
             if (transformedPts == null) {
                 // Transform not successful - try aligning x-axis
-                transformedPts = transformPoints(points, cornerIndex, -1, false, checkCutterBoundary);
+                alignY = false;
+                transformedPts = transformPoints(points, cornerIndex, order, alignY, checkCutterBoundary, true);
             }
         }
 
@@ -308,7 +322,22 @@ public class CalculationActivity extends AppCompatActivity {
             Toast.makeText(appContext, R.string.error_noAcceptableTransformation, Toast.LENGTH_LONG).show();
         }
 
+        // Store the corner and order used to align points
+        if (transformedPts != null) {
+            cornerUsed = cornerIndex;
+            orderUsed = order;
+            alignYUsed = alignY;
+        }
+
         return transformedPts;
+    }
+
+    public ArrayList<PointF> transformPointsUsingPreviousOptions(ArrayList<PointF> points) {
+        return transformPoints(points, cornerUsed, orderUsed, alignYUsed, false, false);
+    }
+
+    public ArrayList<PointF> getExtendedPoints(ArrayList<PointF> points, float amount) {
+        return findCornerAndTransformPoints(extendEdges(points, amount), false);
     }
 
     private static float getDotProduct(PointF centerPt, PointF a, PointF b) {
@@ -327,7 +356,7 @@ public class CalculationActivity extends AppCompatActivity {
     }
 
     // Note: amount should be in inches
-    public ArrayList<PointF> extendEdges(ArrayList<PointF> points, float amount) {
+    public static ArrayList<PointF> extendEdges(ArrayList<PointF> points, float amount) {
         ArrayList<PointF> transformedPoints = new ArrayList<>();
         ArrayList<PointF> edgeVectors = new ArrayList<>();
         ArrayList<PointF> normalVectors = new ArrayList<>();
@@ -389,6 +418,9 @@ public class CalculationActivity extends AppCompatActivity {
         // Move each edge out by amount
         //   Move edge[i] by normalVectors[i] and edge[i-1] by normalVectors[i-1]
         //   Calculate the amount of movement for point[i] (point between edges i and i-1)
+        //   Intersecting the bumped out edges yields the new corner point
+        // Note: Simply moving each corner point by the normal vectors of the adjacent edges yields
+        //   an incorrect result for all non-right angles
         for (int i = 0; i < size; i++) {
             PointF curCorner = points.get(i);
             PointF normalVector_nextEdge = normalVectors.get(i);
@@ -408,7 +440,7 @@ public class CalculationActivity extends AppCompatActivity {
 
 
     // Note: Assumes that the lines actually intersect
-    private PointF intersectionOfLines(PointF line1Pt, PointF line1Slope, PointF line2Pt, PointF line2Slope) {
+    public static PointF intersectionOfLines(PointF line1Pt, PointF line1Slope, PointF line2Pt, PointF line2Slope) {
         // Check if one line is vertical
         if (line1Slope.x == 0) {
             // line1 is vertical, line2 is not -> get y value of intersection
@@ -446,7 +478,7 @@ public class CalculationActivity extends AppCompatActivity {
 
     // Note: Checks if vector intersects edge including edgeStart but not edgeEnd
     // Note: edgeEnd is assumed to be (edgeBegin + edgeSlope)
-    private boolean vectorIntersectsEdge(PointF vectorStart, PointF vectorSlope, PointF edgeStart, PointF edgeSlope) {
+    private static boolean vectorIntersectsEdge(PointF vectorStart, PointF vectorSlope, PointF edgeStart, PointF edgeSlope) {
         // Check if both lines are vertical/horizontal
         if ((vectorSlope.x == 0 && edgeSlope.x == 0) || (vectorSlope.y == 0 && edgeSlope.y == 0)) {
             return false;
@@ -512,11 +544,6 @@ public class CalculationActivity extends AppCompatActivity {
 
             // Transform the points if ChArUco detection was successful
             if (transformedPoints != null) {
-                if (EXTEND_EDGES) {
-                    // Extend edges
-                    transformedPoints = extendEdges(transformedPoints, EXTEND_EDGES_AMOUNT);
-                }
-
                 transformedPoints = findCornerAndTransformPoints(transformedPoints, false);
             } else {
                 handler.post(new Runnable() {

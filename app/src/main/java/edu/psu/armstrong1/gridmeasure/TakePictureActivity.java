@@ -90,6 +90,7 @@ public class TakePictureActivity extends AppCompatActivity {
     int baseH, baseW;                                           // dimensions of the picture before rotation
     int targetH = 0, targetW = 0;                               // dimensions of the imageView
     int previousRotation = -1;                                  // previous rotation value of image
+    int baseRotation = 0;                                       // rotationg value of image before applying any transforms
     boolean newPic = false;                                     // flag denoting whether there is a new picture to load
 
     // Variables for dealing with zooming
@@ -345,6 +346,7 @@ public class TakePictureActivity extends AppCompatActivity {
                 ExifInterface exif = new ExifInterface(currentPhotoPath);
                 int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
                 rotate = exifToDegrees(rotation);
+                baseRotation = (int) rotate;
             } catch (IOException e) {
                 // Error getting rotation - alert user
                 Toast.makeText(getApplicationContext(), R.string.error_picture_rotation, Toast.LENGTH_LONG).show();
@@ -366,7 +368,7 @@ public class TakePictureActivity extends AppCompatActivity {
         targetH = imageView.getHeight();
 
         // Put the rotated and scaled picture in the view (rotate picture to dominant view)
-        rotate = rotateToDominant(rotate, photoH, photoW, targetH, targetW);
+        rotate = getDominantRotation(rotate, photoH, photoW, targetH, targetW);
         bitmap = rotateBitmap(bitmap, rotate);
         imageView.setImageBitmap(bitmap);
 
@@ -534,7 +536,7 @@ public class TakePictureActivity extends AppCompatActivity {
         return 0;
     }
 
-    private static float rotateToDominant(float curRotation, int curHeight, int curWidth, int viewHeight, int viewWidth) {
+    private static float getDominantRotation(float curRotation, int curHeight, int curWidth, int viewHeight, int viewWidth) {
         // Rotate picture to dominant view (portrait or landscape)
         if (viewHeight > viewWidth) {
             // Rotate picture to portrait layout
@@ -717,7 +719,7 @@ public class TakePictureActivity extends AppCompatActivity {
             // Rotate the point if necessary
             // Note: Coordinates will be into the bitmap as loaded from memory without rotation
             if (rotatePointsToBaseCoords) {
-                bitmapPt = rotatePoint(bitmapPt, (360 - previousRotation) % 360, baseH, baseW);
+                bitmapPt = rotatePoint(bitmapPt, (baseRotation - previousRotation + 360) % 360, baseH, baseW);
             }
 
             bitmapPts.add(bitmapPt);

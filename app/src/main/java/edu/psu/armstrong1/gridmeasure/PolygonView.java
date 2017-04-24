@@ -169,6 +169,7 @@ public class PolygonView extends FrameLayout {
             pointsToDistrib = 0;
         }
 
+        // Calculate the number of points per side and how big the box is
         int pointsPerSide[] = new int[4];
         int leftOverPoints = pointsToDistrib % 4;
         int boxWidth = bottomRight.x - topLeft.x;
@@ -462,7 +463,7 @@ public class PolygonView extends FrameLayout {
     }
 
     private boolean isOkToRemovePoint(boolean showWarning) {
-        // Always have at least 3 points
+        // Always have at least MINIMUM_NUM_POINTS points
         if (pointers.size() > MINIMUM_NUM_POINTS) {
             return true;
         } else {
@@ -492,6 +493,7 @@ public class PolygonView extends FrameLayout {
     }
 
     private void calculateCenterPoint() {
+        // Get the center point of all the pointers
         centerPoint = new PointF();
         int size = pointers.size();
         for (ImageView point : pointers) {
