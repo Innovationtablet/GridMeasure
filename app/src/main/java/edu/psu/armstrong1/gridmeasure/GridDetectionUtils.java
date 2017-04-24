@@ -31,6 +31,8 @@ class GridDetectionUtils {
     private static native void calibrateWithCharucoMatsNative(Mat[] images);
     private static native float[] measurementsFromOutlineNative(Mat image, float[] points);
     public static native void init(String fileStoragePath);
+    public static native void undistort(long inMatAddr, long outMatAddr );
+    public static native void drawAxis(long inMatAddr, long outMatAddr );
 
     /**
      *  Wrapper for native call.

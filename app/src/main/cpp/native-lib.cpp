@@ -10,7 +10,6 @@
 #include "opencv2/calib3d.hpp"
 
 cv::Mat cameraMatrix, distCoeffs;
-std::vector<cv::Mat> rvecs, tvecs;
 double repError;
 
 std::string fileStoragePath;
@@ -112,15 +111,24 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_init(
         cv::FileStorage::FileStorage calibrationFile(fileStoragePath + "calibration.xml", cv::FileStorage::READ);
         calibrationFile["cameraMatrix"] >> cameraMatrix;
         calibrationFile["distCoeffs"] >> distCoeffs;
+    } else {
+        cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+        distCoeffs = cv::Mat::zeros(8, 1, CV_64F);  // todo is this right?
     }
+}
 
-    if(fileExists(fileStoragePath + "rvecs.bin")) {
-        rvecs = vecmatread(fileStoragePath + "rvecs.bin");
-    }
 
-    if(fileExists(fileStoragePath + "tvecs.bin")) {
-        tvecs = vecmatread(fileStoragePath + "tvecs.bin");
-    }
+extern "C"
+void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_undistort(
+        JNIEnv* env,
+        jobject /* this */,
+        jlong inMat,
+        jlong outMat) {
+
+    cv::Mat* pInMat = (cv::Mat*)inMat;
+    cv::Mat* pOutMat = (cv::Mat*)outMat;
+
+    cv::undistort(*pInMat, *pOutMat, cameraMatrix, distCoeffs);
 }
 
 /**
@@ -196,14 +204,13 @@ bool calibrateWithCharuco(
 
 
     int calibrationFlags = 0;
-    repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
+    std::vector<cv::Mat> rvecs_unused, tvecs_unused;
+    repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs_unused, tvecs_unused, calibrationFlags);
 
     // Save params.
     cv::FileStorage::FileStorage calibrationFile(fileStoragePath + "calibration.xml", cv::FileStorage::WRITE);
     calibrationFile << "cameraMatrix" << cameraMatrix << "distCoeffs" << distCoeffs;
     calibrationFile.release();
-    vecmatwrite(fileStoragePath + "rvecs.bin", rvecs);
-    vecmatwrite(fileStoragePath + "tvecs.bin", tvecs);
 
     // Mark as calibrated
     calibrated = true;
@@ -222,12 +229,6 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
     jobject imageJobject,
     jfloatArray outlinePointsJfloatArray)
 {
-    if (!calibrated)
-    {
-        cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
-        distCoeffs = cv::Mat::zeros(8, 1, CV_64F);  // todo is this right?
-    }
-
     jfloatArray err = env->NewFloatArray(0);
 
     jclass matclass = env->FindClass("org/opencv/core/Mat");
@@ -256,7 +257,7 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
     // Todo - should we check that the length of the array is even?
     for (int i = 0; i < env->GetArrayLength(outlinePointsJfloatArray); i += 2)
     {
-        cv::Point2f worldPoint = imagePointToWorldPoint(cv::Point2f(cv::Point2f(jfloatArr[i], jfloatArr[i+1])), rvec, tvec);
+        cv::Point2f worldPoint = imagePointToWorldPoint(cv::Point2f(cv::Point2f(jfloatArr[i], jfloatArr[i+1])), rvec, tvec); // todo: why is it constructing a Point2f twice
         outPoints[i] = worldPoint.x;
         outPoints[i+1] = worldPoint.y;
     }
@@ -363,4 +364,34 @@ Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_stringFromJNI(
 
     std::string hello = "hello";
     return env->NewStringUTF(hello.c_str());
+}
+
+extern "C"
+void
+Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_drawAxis(
+        JNIEnv* env,
+        jobject /* this */,
+        jlong inMat,
+        jlong outMat) {
+
+    cv::Mat* pInMat = (cv::Mat*)inMat;
+    cv::Mat* pOutMat = (cv::Mat*)outMat;
+
+    cv::cvtColor(*pInMat, *pInMat, CV_BGRA2BGR);
+
+
+    *pOutMat = *pInMat;
+
+    //estimatePoseCharucoBoard
+    std::vector<cv::Point2f> charucoCorners;
+    std::vector<int> charucoIds;
+
+    // todo handle error
+    if (!findCharuco(*pInMat, getBoard(), charucoCorners, charucoIds)) return;
+
+    cv::Mat rvec,tvec;
+    // todo handle error
+    if (!cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, getBoard(), cameraMatrix, distCoeffs, rvec, tvec)) return;
+
+    cv::aruco::drawAxis(*pOutMat, cameraMatrix, distCoeffs, rvec, tvec, 5.0);
 }
