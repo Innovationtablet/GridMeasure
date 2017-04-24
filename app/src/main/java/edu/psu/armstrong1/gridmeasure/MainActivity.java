@@ -1,8 +1,6 @@
 package edu.psu.armstrong1.gridmeasure;
 
 import android.content.Intent;
-import android.os.Environment;
-import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -81,8 +79,8 @@ public class MainActivity extends AppCompatActivity {
 
     // Called when user clicks the calibrate camera button
     public void calibrateCamera(View view) {
-        //start Calibrate_Camera Activity
-        Intent intent = new Intent(view.getContext(), Calibrate_Camera.class);
+        //start CalibrateCamera Activity
+        Intent intent = new Intent(view.getContext(), CalibrateCamera.class);
         view.getContext().startActivity(intent);
     }
 

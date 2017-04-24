@@ -8,7 +8,7 @@
        android:layout_width="match_parent"
        android:layout_height="match_parent"
        android:orientation="vertical"
-       tools:context="edu.psu.armstrong1.gridmeasure.Calibrate_Camera">
+       tools:context="edu.psu.armstrong1.gridmeasure.CalibrateCamera">
 
     <FrameLayout android:id="@+id/CalibrateCamera_frameLayout"
         android:layout_width="match_parent"
