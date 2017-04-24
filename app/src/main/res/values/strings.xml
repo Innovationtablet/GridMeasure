@@ -41,7 +41,7 @@
 
 
     <!--Calibrate Camera screen-->
-    <string name="button_Calibration_picture">Take 5 Calibration Pictures</string>
+    <string name="button_Calibration_picture">Take at least 5 Calibration Pictures</string>
     <string name="button_Calibration_add_pictures">Take another photo</string>
     <string name="button_Calibration_finish">Finish</string>
     <string name="CalibrateCamera_imageView_description">Current Picture</string>
