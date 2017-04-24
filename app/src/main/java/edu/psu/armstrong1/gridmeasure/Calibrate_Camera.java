@@ -13,6 +13,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.io.File;
@@ -24,12 +25,25 @@ import java.util.List;
 
 public class Calibrate_Camera extends AppCompatActivity {
 
+    //Constants for savedInstacne lookup values
+    static final String TAKE_ANOTHER = "takeAnotherPicButton";
+    static final String FINISH_BUTTON = "finishButton";
+    static final String PROGRESS = "progressBar";
 
+    // booleans to maintain button visibility in case of phone rotation
+    boolean take_another_pic_button = false;                    //value to check if take another picture button is set to visible
+    boolean finish_button_view = false;                         //vale to check if finish button is set to visible
+
+    //Constant for Picture Intent
     static final int PICTURE_REQUEST = 1;
+
+    //other variables
     int number_of_pics = 0;
     List<String> fileNames = new ArrayList<String>();
     String currentPhotoPath = null;                             // path to last image taken
     int previousRotation = -1;                                  // previous rotation value of image
+    private ProgressBar mProgress;                              //define Progress Bar
+
 
 
     @Override
@@ -40,6 +54,7 @@ public class Calibrate_Camera extends AppCompatActivity {
         View decorView = getWindow().getDecorView();
         int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
         decorView.setSystemUiVisibility(uiOptions);
+
 
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -52,7 +67,36 @@ public class Calibrate_Camera extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_calibrate__camera);
+        //set progress Bar
+        mProgress = (ProgressBar) findViewById(R.id.progressBar);
+
+        if(savedInstanceState != null) {
+            take_another_pic_button = savedInstanceState.getBoolean(TAKE_ANOTHER, false);
+            finish_button_view = savedInstanceState.getBoolean(FINISH_BUTTON, false);
+            number_of_pics = savedInstanceState.getInt(PROGRESS, 0);
+        }
+        //check which buttons should display
+        if(take_another_pic_button){
+            findViewById(R.id.button_CalibrationAddPictures).setVisibility(View.VISIBLE);
+            findViewById(R.id.button_CalibrationTakePicture).setVisibility(View.GONE);
+        }
+        if(finish_button_view){
+            findViewById(R.id.button_CalibrationFinish).setVisibility(View.VISIBLE);
+        }
+        mProgress.setProgress(number_of_pics);
     }
+
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        // Save the current photo path
+        savedInstanceState.putBoolean(TAKE_ANOTHER , take_another_pic_button);
+        savedInstanceState.putBoolean(FINISH_BUTTON, finish_button_view);
+        savedInstanceState.putInt(PROGRESS, number_of_pics);
+
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
 
     public void dispatchTakePictureIntent(View view) {
             // Create intent to take a picture
@@ -98,9 +142,14 @@ public class Calibrate_Camera extends AppCompatActivity {
             if(number_of_pics==1) {
                 findViewById(R.id.button_CalibrationAddPictures).setVisibility(View.VISIBLE);
                 findViewById(R.id.button_CalibrationTakePicture).setVisibility(View.GONE);
+                take_another_pic_button = true;
             }
             if(number_of_pics==5){
                 findViewById(R.id.button_CalibrationFinish).setVisibility(View.VISIBLE);
+                finish_button_view=true;
+            }
+            if(number_of_pics<=5){
+                mProgress.setProgress(number_of_pics);
             }
     }
 

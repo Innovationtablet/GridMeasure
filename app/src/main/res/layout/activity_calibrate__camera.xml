@@ -19,7 +19,17 @@
             android:id="@+id/CalibrateCamera_imageView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:adjustViewBounds="false"
             android:contentDescription="@string/CalibrateCamera_imageView_description" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:max="5"
+            android:progress="0" />
 
     </FrameLayout>
 
@@ -28,6 +38,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="0"
         android:orientation="horizontal">
+
+
 
         <Button
             android:id="@+id/button_CalibrationTakePicture"
