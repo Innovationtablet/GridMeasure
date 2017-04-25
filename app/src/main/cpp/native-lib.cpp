@@ -78,7 +78,7 @@ cv::Point2f imagePointToWorldPoint(
 
 
     cv::Mat uvPoint = cv::Mat::ones(3,1,cv::DataType<double>::type); //u,v,1
-    uvPoint.at<double>(0,0) = (double)imagePoint.x; //got this point using mouse callback
+    uvPoint.at<double>(0,0) = (double)imagePoint.x;
     uvPoint.at<double>(1,0) = (double)imagePoint.y;
 
     cv::Mat tempMat, tempMat2;
