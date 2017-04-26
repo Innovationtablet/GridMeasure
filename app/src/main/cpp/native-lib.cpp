@@ -9,8 +9,11 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/calib3d.hpp"
 
-cv::Mat cameraMatrix, distCoeffs;
+cv::Mat cameraMatrix, distCoeffs, newCameraMatrix;
 double repError;
+
+// Debug
+cv::Mat currentImage;
 
 std::string fileStoragePath;
 
@@ -62,7 +65,12 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_undistort(
     cv::Mat* pInMat = (cv::Mat*)inMat;
     cv::Mat* pOutMat = (cv::Mat*)outMat;
 
-    cv::undistort(*pInMat, *pOutMat, cameraMatrix, distCoeffs);
+    newCameraMatrix = cv::getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, pInMat->size(), 1.0);
+
+    cv::undistort(*pInMat, *pOutMat, cameraMatrix, distCoeffs, newCameraMatrix);
+
+    // Debug
+    currentImage = pOutMat->clone();
 }
 
 /**
@@ -76,19 +84,18 @@ cv::Point2f imagePointToWorldPoint(
     cv::Mat rotationMatrix;
     cv::Rodrigues(rvec,rotationMatrix);
 
-
     cv::Mat uvPoint = cv::Mat::ones(3,1,cv::DataType<double>::type); //u,v,1
     uvPoint.at<double>(0,0) = (double)imagePoint.x;
     uvPoint.at<double>(1,0) = (double)imagePoint.y;
 
     cv::Mat tempMat, tempMat2;
     double s;
-    tempMat = rotationMatrix.inv() * cameraMatrix.inv() * uvPoint;
+    tempMat = rotationMatrix.inv() * newCameraMatrix.inv() * uvPoint;
     tempMat2 = rotationMatrix.inv() * tvec;
     s = 0 + tempMat2.at<double>(2,0); // we can set z to whatever; here we set it to 0.
     s /= tempMat.at<double>(2,0);
 
-    cv::Mat point =  rotationMatrix.inv() * (s * cameraMatrix.inv() * uvPoint - tvec);
+    cv::Mat point =  rotationMatrix.inv() * (s * newCameraMatrix.inv() * uvPoint - tvec);
     return cv::Point2f(point.at<double>(0,0), point.at<double>(1,0));
 }
 
@@ -99,7 +106,9 @@ bool findCharuco(
         cv::Mat in,
         const cv::Ptr<cv::aruco::CharucoBoard> board,
         std::vector<cv::Point2f>& charucoCorners,
-        std::vector<int>& charucoIds)
+        std::vector<int>& charucoIds,
+        cv::InputArray _cameraMatrix = cv::noArray(),
+        cv::InputArray _distCoeffs = cv::noArray())
 {
     std::vector< int > markerIds;
     std::vector< std::vector<cv::Point2f> > markerCorners;
@@ -107,7 +116,7 @@ bool findCharuco(
 
     // if at least one marker detected
     if(markerIds.size() > 0) {
-        cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, in, board, charucoCorners, charucoIds);
+        cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, in, board, charucoCorners, charucoIds, _cameraMatrix, _distCoeffs);
         return true;
     }
     return false;
@@ -165,27 +174,77 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
 {
     jfloatArray err = env->NewFloatArray(0);
 
+    // Get the float array.
+    jfloat* jfloatArr = env->GetFloatArrayElements(outlinePointsJfloatArray, 0);
+
     jclass matclass = env->FindClass("org/opencv/core/Mat");
     jmethodID getPtrMethod = env->GetMethodID(matclass, "getNativeObjAddr", "()J");
 
     cv::Mat image = *(cv::Mat*)env->CallLongMethod(imageJobject, getPtrMethod);
+
+    // Undistort
+    //cv::Mat undistortedImage;
+    //cv::undistort(image, undistortedImage, cameraMatrix, distCoeffs, newCameraMatrix);
+    ///image = undistortedImage;
+
+    // Debug - just use the image from the last time the native distort function was called.
+    image = currentImage.clone();
+    cv::cvtColor(image, image, CV_RGBA2GRAY);
+
+    // New distortion coeffs - assume distortion 0.
+    cv::Mat newDistCoeffs = cv::Mat::zeros(8, 1, CV_64F);  // todo is this right?
 
     const cv::Ptr<cv::aruco::CharucoBoard> board = getBoard();
 
     //estimatePoseCharucoBoard
     std::vector<cv::Point2f> charucoCorners;
     std::vector<int> charucoIds;
-
     // todo handle error
-    if (!findCharuco(image, board, charucoCorners, charucoIds)) return err;
+    if (!findCharuco(image, board, charucoCorners, charucoIds, newCameraMatrix, newDistCoeffs)) return err;
 
     cv::Mat rvec,tvec;
     // todo handle error
-    if (!cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec)) return err;
+    if (!cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, newCameraMatrix, newDistCoeffs, rvec, tvec)) return err;
 
-    // Get the float array.
-    jfloat* jfloatArr = env->GetFloatArrayElements(outlinePointsJfloatArray, 0);
 
+    // Create homography
+
+    std::vector<cv::Point2f> obj;
+    std::vector<cv::Point2f> scene;
+    for (int i = 0; i < charucoCorners.size(); i++) {
+        cv::Point2f corner = charucoCorners.at(i);
+        int id = charucoIds.at(i);
+        scene.push_back(cv::Point2f(board->chessboardCorners[id].x, board->chessboardCorners[id].y));
+        obj.push_back(corner);
+    }
+
+    cv::Mat H = findHomography( obj, scene, CV_RANSAC );
+
+    std::vector<cv::Point2f> obj_corners;
+    std::vector<cv::Point2f> scene_corners;
+    for (int i = 0; i < env->GetArrayLength(outlinePointsJfloatArray); i += 2)
+    {
+        obj_corners.push_back(cv::Point2f(jfloatArr[i], jfloatArr[i+1]));
+    }
+
+    cv::perspectiveTransform( obj_corners, scene_corners, H);
+
+    float* outPoints = new float[scene_corners.size()*2];
+    // Note that we jump in increments of two.
+    // Todo - should we check that the length of the array is even?
+    for (int i = 0; i < scene_corners.size(); i++)
+    {
+        outPoints[2*i] = scene_corners.at(i).x;
+        outPoints[2*i+1] = scene_corners.at(i).y;
+    }
+
+    jfloatArray out = env->NewFloatArray(scene_corners.size()*2);
+    env->SetFloatArrayRegion(out, 0, scene_corners.size()*2, outPoints);
+
+    delete [] outPoints;
+
+
+/*
     float* outPoints = new float[env->GetArrayLength(outlinePointsJfloatArray)];
     // Note that we jump in increments of two.
     // Todo - should we check that the length of the array is even?
@@ -199,7 +258,7 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
     jfloatArray out = env->NewFloatArray(env->GetArrayLength(outlinePointsJfloatArray));
     env->SetFloatArrayRegion(out, 0, env->GetArrayLength(outlinePointsJfloatArray), outPoints);
 
-    delete [] outPoints;
+    delete [] outPoints;*/
 
     return out;
 }

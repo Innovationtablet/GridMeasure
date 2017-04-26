@@ -377,7 +377,7 @@ public class TakePictureActivity extends AppCompatActivity {
         GridDetectionUtils.undistort(in.getNativeObjAddr(), out.getNativeObjAddr());
 
         // DEBUG: draw axis if you want. There's not really a point to this; it just looks cool.
-        //GridDetectionUtils.drawAxis(out.getNativeObjAddr(), out.getNativeObjAddr());
+        GridDetectionUtils.drawAxis(out.getNativeObjAddr(), out.getNativeObjAddr());
 
         // Convert back to bitmap.
         Utils.matToBitmap(out, bitmap);
