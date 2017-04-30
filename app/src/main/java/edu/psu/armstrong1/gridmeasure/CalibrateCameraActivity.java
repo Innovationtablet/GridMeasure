@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class CalibrateCamera extends AppCompatActivity {
+public class CalibrateCameraActivity extends AppCompatActivity {
 
     //Constants for savedInstacne lookup values
     static final String TAKE_ANOTHER = "takeAnotherPicButton";
