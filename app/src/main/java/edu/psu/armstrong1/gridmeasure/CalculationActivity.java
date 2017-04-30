@@ -538,9 +538,9 @@ public class CalculationActivity extends AppCompatActivity {
         public void run() {
             // Convert the points to real-world dimensions.
             Mat image = Imgcodecs.imread(currentPhotoPath, Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
-            // The code in this file works on ArrayLists, while the code in GridDetectionUtils
+            // The code in this file works on ArrayLists, while the code in ComputerVisionUtils
             // works on Lists. We do a conversion here.
-            ArrayList<PointF> transformedPoints = new ArrayList<>(GridDetectionUtils.measurementsFromOutline(image, polygonPoints));
+            ArrayList<PointF> transformedPoints = new ArrayList<>(ComputerVisionUtils.measurementsFromOutline(image, polygonPoints));
 
             // Transform the points if ChArUco detection was successful
             if (transformedPoints != null) {

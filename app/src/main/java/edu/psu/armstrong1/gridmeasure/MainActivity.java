@@ -53,8 +53,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Initialize GridDetectionUtils
-        GridDetectionUtils.init(getFilesDir().getPath());
+        // Initialize ComputerVisionUtils
+        ComputerVisionUtils.init(getFilesDir().getPath());
     }
 
 

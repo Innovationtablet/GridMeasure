@@ -1,14 +1,11 @@
 package edu.psu.armstrong1.gridmeasure;
 
-import android.content.Context;
 import android.graphics.PointF;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,10 +16,8 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +27,7 @@ import static org.junit.Assert.assertEquals;
  * Created by hfs50 on 4/8/2017.
  */
 @RunWith(AndroidJUnit4.class)
-public class GridDetectionUtilsTest {
+public class ComputerVisionUtilsTest {
 
     static {
         System.loadLibrary("opencv_java3");
@@ -80,7 +75,7 @@ public class GridDetectionUtilsTest {
         images[1] = Imgcodecs.imdecode(new MatOfByte(IOUtils.toByteArray(is2)), Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
         images[2] = Imgcodecs.imdecode(new MatOfByte(IOUtils.toByteArray(is3)), Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
 
-        GridDetectionUtils.calibrateWithCharuco(images);
+        ComputerVisionUtils.calibrateWithCharuco(images);
 
         ArrayList<PointF> list = new ArrayList<>();
         list.add(new PointF(915,3625));
@@ -88,7 +83,7 @@ public class GridDetectionUtilsTest {
         list.add(new PointF(2147,1097));
         list.add(new PointF(2310,3142));
 
-        List<PointF> out = GridDetectionUtils.measurementsFromOutline(images[0], list);
+        List<PointF> out = ComputerVisionUtils.measurementsFromOutline(images[0], list);
 
     }
 

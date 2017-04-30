@@ -21,9 +21,9 @@ import java.util.List;
  * Created by hfs50 on 3/20/2017.
  */
 
-class GridDetectionUtils {
+class ComputerVisionUtils {
 
-    private static final String TAG = "GridDetectionUtils";
+    private static final String TAG = "ComputerVisionUtils";
 
     // FIXME: 4/12/2017 Why do these show up as "Cannot resolve corresponding JNI function..." in AS?
     public static native String stringFromJNI(long inMatAddr, long outMatAddr);

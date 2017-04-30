@@ -374,10 +374,10 @@ public class TakePictureActivity extends AppCompatActivity {
         Mat in = new Mat();
         Utils.bitmapToMat(bitmap, in);
         Mat out = new Mat();
-        GridDetectionUtils.undistort(in.getNativeObjAddr(), out.getNativeObjAddr());
+        ComputerVisionUtils.undistort(in.getNativeObjAddr(), out.getNativeObjAddr());
 
         // DEBUG: draw axis if you want. There's not really a point to this; it just looks cool.
-        GridDetectionUtils.drawAxis(out.getNativeObjAddr(), out.getNativeObjAddr());
+        ComputerVisionUtils.drawAxis(out.getNativeObjAddr(), out.getNativeObjAddr());
 
         // Convert back to bitmap.
         Utils.matToBitmap(out, bitmap);

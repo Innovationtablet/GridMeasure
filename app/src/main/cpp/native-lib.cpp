@@ -36,7 +36,7 @@ bool fileExists(std::string filename)
 }
 
 extern "C"
-void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_init(
+void Java_edu_psu_armstrong1_gridmeasure_ComputerVisionUtils_init(
     JNIEnv* env,
     jobject,
     jstring fileStoragePathJstring)
@@ -56,7 +56,7 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_init(
 
 
 extern "C"
-void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_undistort(
+void Java_edu_psu_armstrong1_gridmeasure_ComputerVisionUtils_undistort(
         JNIEnv* env,
         jobject /* this */,
         jlong inMat,
@@ -166,7 +166,7 @@ bool calibrateWithCharuco(
  *  Clearly, this means outlinePointsJfloatArray should be of even length.
  */
 extern "C"
-jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsFromOutlineNative(
+jfloatArray Java_edu_psu_armstrong1_gridmeasure_ComputerVisionUtils_measurementsFromOutlineNative(
     JNIEnv* env,
     jobject,
     jobject imageJobject,
@@ -264,7 +264,7 @@ jfloatArray Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_measurementsF
 }
 
 extern "C"
-void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_calibrateWithCharucoNative(
+void Java_edu_psu_armstrong1_gridmeasure_ComputerVisionUtils_calibrateWithCharucoNative(
     JNIEnv* env,
     jobject,
     jobjectArray imagePathsArray)
@@ -297,7 +297,7 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_calibrateWithCharuco
 }
 
 extern "C"
-void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_calibrateWithCharucoMatsNative(
+void Java_edu_psu_armstrong1_gridmeasure_ComputerVisionUtils_calibrateWithCharucoMatsNative(
     JNIEnv* env,
     jobject,
     jobjectArray imageArray)
@@ -331,7 +331,7 @@ void Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_calibrateWithCharuco
 
 extern "C"
 jstring
-Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_stringFromJNI(
+Java_edu_psu_armstrong1_gridmeasure_ComputerVisionUtils_stringFromJNI(
         JNIEnv* env,
         jobject /* this */,
         jlong inMat,
@@ -361,7 +361,7 @@ Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_stringFromJNI(
 
 extern "C"
 void
-Java_edu_psu_armstrong1_gridmeasure_GridDetectionUtils_drawAxis(
+Java_edu_psu_armstrong1_gridmeasure_ComputerVisionUtils_drawAxis(
         JNIEnv* env,
         jobject /* this */,
         jlong inMat,
