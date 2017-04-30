@@ -11,9 +11,6 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
-            cmake {
-                cppFlags ""
-            }
             // This does what APP_ABI is supposed to do.
             // not sure why APP_ABI isn't working.
             ndkBuild {
@@ -29,10 +26,6 @@ android {
         }
     }
     externalNativeBuild {
-        /*cmake {
-            path "CMakeLists.txt"
-        }*/
-
         ndkBuild {
             path "jni/Android.mk"
         }

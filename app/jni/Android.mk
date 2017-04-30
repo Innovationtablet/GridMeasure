@@ -8,9 +8,9 @@ OPENCV_LIB_TYPE:=STATIC
 OPENCV_INSTALL_MODULES:=on
 include $(CVROOT)/OpenCV.mk
 
-LOCAL_MODULE := native-lib
+LOCAL_MODULE := computer-vision-utils-lib
 
-LOCAL_SRC_FILES := ../src/main/cpp/native-lib.cpp
+LOCAL_SRC_FILES := ../src/main/cpp/computer-vision-utils-lib.cpp
 
 include $(BUILD_SHARED_LIBRARY)
 
